@@ -9,5 +9,4 @@ class MainPanel(bpy.types.Panel):
     bl_category = 'LentDisplay'
 
     def draw(self, context):
-        layout = self.layout
-        layout.operator("object.display_spawner", text="Spawn Display")
+        self.layout.operator("object.display_spawner", text="Spawn Display")

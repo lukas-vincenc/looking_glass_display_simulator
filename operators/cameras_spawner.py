@@ -13,12 +13,13 @@ class CamerasSpawner(bpy.types.Operator):
     bl_description = "Spawns cameras in a line all pointing at a focus point"
 
     def execute(self, context):
-        camera_count = 45
-        focus_point = mathutils.Vector((0.0, 0.0, 0.0))
-        focus_distance = 30
+        focus_object = context.scene.qm_focus_object
+        focus_distance = context.scene.qm_focus_distance
+        camera_count = context.scene.qm_camera_count
 
-        bpy.ops.mesh.primitive_cube_add(location=focus_point)
-        cube = bpy.context.active_object
+        if not focus_object:
+            self.report({'ERROR'}, "Please select a focus object")
+            return {'CANCELLED'}
 
         # remove old cameras
         for obj in bpy.data.objects:
@@ -32,7 +33,7 @@ class CamerasSpawner(bpy.types.Operator):
             bpy.ops.object.camera_add(location=location, rotation=rotation)
             camera = bpy.context.active_object
             camera.name = f"{QUILT_CAMERA_OBJ_NAME}_{i:03d}"
-            camera.parent = cube
+            camera.parent = focus_object
             camera.data.lens_unit = 'FOV'
             camera.data.angle = math.radians(90)
             camera.data.shift_x = -(i - 22) / float(focus_distance * 2)

@@ -9,5 +9,15 @@ class QuiltMakerPanel(bpy.types.Panel):
     bl_category = 'QuiltMaker'
 
     def draw(self, context):
-        layout = self.layout
-        layout.operator("object.cameras_spawner", text="Spawn Cameras")
+        self.layout.label(text="Spawn Camera Array:")
+
+        self.layout.prop(context.scene, "qm_camera_count")
+        self.layout.prop(context.scene, "qm_focus_distance")
+        self.layout.prop(context.scene, "qm_focus_object")
+
+        self.layout.separator()
+        op = self.layout.operator("object.cameras_spawner", text="Spawn Cameras")
+
+        op.camera_count = context.scene.qm_camera_count
+        op.focus_distance = context.scene.qm_focus_distance
+        op.focus_object = context.scene.qm_focus_object

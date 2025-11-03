@@ -28,8 +28,29 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
+    bpy.types.Scene.qm_camera_count = bpy.props.IntProperty(
+        name="Camera Count",
+        default=45,
+        min=1,
+        max=200
+    )
+    bpy.types.Scene.qm_focus_distance = bpy.props.FloatProperty(
+        name="Focus Distance",
+        default=30.0,
+        min=0.1,
+        max=1000.0
+    )
+    bpy.types.Scene.qm_focus_object = bpy.props.PointerProperty(
+        name="Focus Object",
+        type=bpy.types.Object
+    )
+
 
 def unregister():
+    del bpy.types.Scene.qm_camera_count
+    del bpy.types.Scene.qm_focus_distance
+    del bpy.types.Scene.qm_focus_object
+
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
 
