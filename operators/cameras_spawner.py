@@ -13,10 +13,12 @@ class CamerasSpawner(bpy.types.Operator):
     bl_description = "Spawns cameras in a line all pointing at a focus point"
 
     def execute(self, context):
-        camera_count = 10
-        spacing = 1.0
-        camera_distance = 10.0
+        camera_count = 45
         focus_point = mathutils.Vector((0.0, 0.0, 0.0))
+        focus_distance = 30
+
+        bpy.ops.mesh.primitive_cube_add(location=focus_point)
+        cube = bpy.context.active_object
 
         # remove old cameras
         for obj in bpy.data.objects:
@@ -25,26 +27,14 @@ class CamerasSpawner(bpy.types.Operator):
 
         rotation = (math.radians(90), 0, 0)
 
-        # Compute horizontal field of view
-        # Assume all cameras use default sensor size and focal length
-        base_cam_data = bpy.data.cameras.new("TempCamData")
-        fov_x = base_cam_data.angle_x  # radians
-        bpy.data.cameras.remove(base_cam_data)
-
-        # Center offset
-        half = (camera_count - 1) / 2.0
-
         for i in range(camera_count):
-            x = i * spacing - half * spacing
-            location = mathutils.Vector((x, -camera_distance, 0))
-
-            bpy.ops.object.camera_add(location=location)
-            cam = bpy.context.object
-            cam.name = f"{QUILT_CAMERA_OBJ_NAME}_{i:03d}"
-            cam.rotation_euler = rotation
-
-            # TODO: this computation is incorrect
-            shift_x = -x / (camera_distance * math.tan(fov_x / 2))
-            cam.data.shift_x = shift_x
+            location = mathutils.Vector((i - math.floor(camera_count / 2), 0 - focus_distance, 0.0))
+            bpy.ops.object.camera_add(location=location, rotation=rotation)
+            camera = bpy.context.active_object
+            camera.name = f"{QUILT_CAMERA_OBJ_NAME}_{i:03d}"
+            camera.parent = cube
+            camera.data.lens_unit = 'FOV'
+            camera.data.angle = math.radians(90)
+            camera.data.shift_x = -(i - 22) / float(focus_distance * 2)
 
         return {'FINISHED'}
