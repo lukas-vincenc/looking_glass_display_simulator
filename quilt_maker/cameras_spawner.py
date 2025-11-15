@@ -8,14 +8,16 @@ QUILT_CAMERA_OBJ_NAME = "QuiltCamera"
 
 
 class CamerasSpawner(bpy.types.Operator):
-    bl_idname = "object.cameras_spawner"
-    bl_label = "Cameras Spawner"
+    bl_idname = "qm.cameras_spawner"
+    bl_label = "Spawn Cameras"
     bl_description = "Spawns cameras in a line all pointing at a focus point"
 
     def execute(self, context):
-        focus_object = context.scene.qm_focus_object
-        focus_distance = context.scene.qm_focus_distance
-        camera_count = context.scene.qm_camera_count
+        custom_props = context.scene.custom_props
+
+        focus_object = custom_props.qm_focus_object
+        focus_distance = custom_props.qm_focus_distance
+        camera_count = custom_props.qm_camera_count
 
         if not focus_object:
             self.report({'ERROR'}, "Please select a focus object")

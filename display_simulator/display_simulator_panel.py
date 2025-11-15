@@ -1,7 +1,7 @@
 import bpy
 
 
-class MainPanel(bpy.types.Panel):
+class DisplaySimulatorPanel(bpy.types.Panel):
     bl_label = "Lenticular Display Simulator"
     bl_idname = "LENTICULAR DISPLAY SIMULATOR_PT_suffix"
     bl_space_type = 'VIEW_3D'
