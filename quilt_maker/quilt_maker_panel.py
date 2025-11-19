@@ -86,6 +86,8 @@ all_classes = [
 def register():
     for cls in all_classes:
         bpy.utils.register_class(cls)
+
+    # TODO: change to qm_custom_props
     bpy.types.Scene.custom_props = bpy.props.PointerProperty(type=CustomProps)
     bpy.types.Scene.shared_storage = bpy.props.PointerProperty(type=SharedStorage)
 

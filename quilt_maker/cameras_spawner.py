@@ -17,12 +17,6 @@ class CamerasSpawner(bpy.types.Operator):
         custom_props = scene.custom_props
         shared_storage = scene.shared_storage
 
-        # TODO: temp, to handle better
-        scene = bpy.context.scene
-        scene.render.resolution_x = 500
-        scene.render.resolution_y = 500
-        scene.render.resolution_percentage = 100
-
         focus_object = custom_props.qm_focus_object
         focus_distance = custom_props.qm_focus_distance
         camera_count = custom_props.qm_camera_count
@@ -40,7 +34,9 @@ class CamerasSpawner(bpy.types.Operator):
         middle = math.floor(camera_count / 2)
 
         for i in range(camera_count):
-            location = mathutils.Vector((i - middle, -focus_distance, 0.0))
+            x_axis = (i - middle)
+
+            location = mathutils.Vector((x_axis, -focus_distance, 0.0))
             bpy.ops.object.camera_add(location=location, rotation=rotation)
             camera = bpy.context.active_object
 
@@ -50,7 +46,7 @@ class CamerasSpawner(bpy.types.Operator):
 
             camera.data.lens_unit = 'FOV'
             camera.data.angle = math.radians(90)
-            camera.data.shift_x = -(i - 22) / float(focus_distance * 2)
+            camera.data.shift_x = -x_axis / float(focus_distance * 2)
 
             item = shared_storage.camera_names.add()
             item.value = cam_name

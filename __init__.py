@@ -1,3 +1,4 @@
+from .display_simulator import display_simulator_panel
 from .quilt_maker import quilt_maker_panel
 
 bl_info = {
@@ -13,10 +14,12 @@ bl_info = {
 
 def register():
     quilt_maker_panel.register()
+    display_simulator_panel.register()
 
 
 def unregister():
     quilt_maker_panel.unregister()
+    display_simulator_panel.unregister()
 
 
 if __name__ == "__main__":

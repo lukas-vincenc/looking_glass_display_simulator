@@ -35,9 +35,12 @@ class DisplaySpawner(bpy.types.Operator):
     bl_description = "Spawns lenses creating the display"
 
     def execute(self, context):
-        lens_count = 10
-        lens_radius = 0.5
-        lens_height = 5.0
+        scene = context.scene
+        custom_props = scene.lds_custom_props
+
+        lens_count = custom_props.lds_width
+        lens_radius = 0.005
+        lens_height = custom_props.lds_height * lens_radius * 2
         spacing = lens_radius * 2.0
         flatten_offset = lens_radius * 0.5
         cylinder_vertices = 128
@@ -73,7 +76,7 @@ class DisplaySpawner(bpy.types.Operator):
             cube.scale.z = lens_height
 
             bool_mod = cyl.modifiers.new(name="FlatSide", type='BOOLEAN')
-            bool_mod.operation = 'DIFFERENCE'  # removes the overlap of the cylinder and the cube
+            bool_mod.operation = 'UNION'
             bool_mod.object = cube
 
             bpy.context.view_layer.objects.active = cyl
