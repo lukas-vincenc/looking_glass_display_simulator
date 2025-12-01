@@ -4,16 +4,21 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 
 
+# ------------------------------------------------------------
+# Helper: Load tile pixels
+# ------------------------------------------------------------
 def load_pixels(filepath):
-    image = bpy.data.images.load(filepath)
-    image.pixels[:]  # ensure it's loaded
-    return list(image.pixels)  # flat RGBA float list
+    img = bpy.data.images.load(filepath)
+    return list(img.pixels[:])  # flat RGBA floats
 
 
+# ======================================================================
+#   MAIN OPERATOR
+# ======================================================================
 class DisplayImageRenderer(bpy.types.Operator):
     bl_idname = "qm.render_display_image"
     bl_label = "Render Display Image"
-    bl_description = "Render a display-ready image from the generated cameras"
+    bl_description = "Render a display-ready hologram image from quilt cameras"
 
     shared_storage = None
 
@@ -26,9 +31,11 @@ class DisplayImageRenderer(bpy.types.Operator):
     grid_rows = None
 
     cam_count = None
-
     quilt = None
 
+    # ------------------------------------------------------------------
+    # EXECUTE
+    # ------------------------------------------------------------------
     def execute(self, context):
         scene = context.scene
         custom_props = scene.custom_props
@@ -55,9 +62,68 @@ class DisplayImageRenderer(bpy.types.Operator):
         temp_dir = os.path.join(target_directory, "quilt_temp")
         os.makedirs(temp_dir, exist_ok=True)
 
-        # Render all cameras
-        orig_camera = scene.camera
-        orig_filepath = scene.render.filepath
+        # render all cameras
+        tile_paths = self.render_all_tiles(scene, cameras, temp_dir)
+
+        # build quilt grid (NxM quilt texture)
+        quilt_buf = self.build_grid_quilt(tile_paths)
+
+        # Now run CPU shader to create final hologram display image:
+        final_buf = self.build_display_image_from_quilt(
+            quilt_buf,
+            pitch=354.677,
+            tilt=-0.113949,
+            center=-0.400272,
+            color_shift=0.00013
+        )
+
+        # create final image in Blender
+        out_name = "Display_Image"
+        if out_name in bpy.data.images:
+            bpy.data.images.remove(bpy.data.images[out_name])
+
+        out_img = bpy.data.images.new(
+            out_name,
+            width=self.tile_width,
+            height=self.tile_height
+        )
+        out_img.pixels = final_buf
+
+        # save
+        out_path = os.path.join(target_directory, "display_image.png")
+        out_img.filepath_raw = out_path
+        out_img.file_format = 'PNG'
+        out_img.save()
+
+        # cleanup
+        for p in tile_paths:
+            try: os.remove(p)
+            except: pass
+
+        return {'FINISHED'}
+
+    # ==================================================================
+    # CAMERA COLLECTION
+    # ==================================================================
+    def collect_sorted_cameras(self):
+        objs = bpy.data.objects
+        cams = [
+            objs.get(item.value)
+            for item in self.shared_storage.camera_names
+            if objs.get(item.value)
+        ]
+        cams.sort(
+            key=lambda cam: int(cam.name.split("_")[-1])
+        )
+        return cams
+
+    # ==================================================================
+    # RENDER TILES
+    # ==================================================================
+    def render_all_tiles(self, scene, cameras, temp_dir):
+        orig_cam = scene.camera
+        orig_path = scene.render.filepath
+
         tile_paths = []
 
         for idx, cam in enumerate(cameras):
@@ -67,136 +133,97 @@ class DisplayImageRenderer(bpy.types.Operator):
             bpy.ops.render.render(write_still=True)
             tile_paths.append(out_path)
 
-        scene.camera = orig_camera
-        scene.render.filepath = orig_filepath
+        scene.camera = orig_cam
+        scene.render.filepath = orig_path
 
-        # Create final output image
-        self.quilt_width = self.tile_width * self.cam_count
-        self.quilt_height = self.tile_height
-        quilt_name = "Display_Image"
+        return tile_paths
 
-        if quilt_name in bpy.data.images:
-            bpy.data.images.remove(bpy.data.images[quilt_name])
-
-        self.quilt = bpy.data.images.new(
-            quilt_name, width=self.quilt_width, height=self.quilt_height
-        )
-
-        # --- build interleaved image ---
-        self.build_interleaved_image(tile_paths)
-
-        # Save output
-        quilt_path = os.path.join(target_directory, "display_image.png")
-        self.quilt.filepath_raw = quilt_path
-        self.quilt.file_format = 'PNG'
-        self.quilt.save()
-
-        # cleanup temp tiles
-        for path in tile_paths:
-            try:
-                os.remove(path)
-            except OSError:
-                pass
-
-        return {'FINISHED'}
-
-    # -------------------------------------------------------------------------
-    # CAMERA COLLECTION
-    # -------------------------------------------------------------------------
-
-    def collect_sorted_cameras(self):
-        objs = bpy.data.objects
-        cameras = [
-            objs.get(item.value)
-            for item in self.shared_storage.camera_names
-            if objs.get(item.value)
-        ]
-        cameras.sort(key=lambda cam: int(cam.name.split("_")[-1]))
-        return cameras
-
-    # -------------------------------------------------------------------------
-    # INTERLEAVED ROW-BASED RENDERING
-    # -------------------------------------------------------------------------
-
-    def render_interleaved_row(self, out_y, tile_pixel_arrays):
-        tile_w = self.tile_width
-        tile_h = self.tile_height
-        cam_count = self.cam_count
-        quilt_w = self.quilt_width
-
-        row_pixels = []
-
-        # Repeat for every tile-row k (0 → tile_h-1)
-        for k in range(tile_h):
-
-            # For each tile i, append tile[i][k]
-            for tile_index in range(cam_count):
-                pix = tile_pixel_arrays[tile_index]
-
-                src_start = (k * tile_w) * 4
-                src_end = src_start + tile_w * 4
-
-                row_pixels.extend(pix[src_start:src_end])
-
-        # Write this huge chunk directly
-        dst_start = out_y * quilt_w * 4
-        dst_end = dst_start + quilt_w * 4
-        self.quilt.pixels[dst_start:dst_end] = row_pixels
-
-    def build_interleaved_image(self, tile_paths):
-        """
-        Build pixel-level interleaved quilt:
-        Output pixel order per row:
-        [ tile0[x], tile1[x], tile2[x], ... tileN[x] ] repeated for each x.
-        """
-
+    # ==================================================================
+    # 1. BUILD THE QUILT GRID (NxM CAMERAS)
+    # ==================================================================
+    def build_grid_quilt(self, tile_paths):
         num_tiles = len(tile_paths)
         tile_w = self.tile_width
         tile_h = self.tile_height
-        tile_px_count = tile_w * tile_h * 4  # RGBA
 
-        max_workers = min(os.cpu_count(), 16)
-
-        # Load tiles in parallel
-        with ThreadPoolExecutor(max_workers=max_workers) as ex:
+        # load tiles in parallel
+        with ThreadPoolExecutor(max_workers=min(os.cpu_count(), 16)) as ex:
             tiles = list(ex.map(load_pixels, tile_paths))
 
-        # PREPARE final buffer (very large)
-        quilt_w = tile_w * num_tiles  # pixel-per-tile interleaving increases width
-        quilt_h = tile_h
-        total_px = quilt_w * quilt_h * 4
+        quilt_w = self.grid_cols * tile_w
+        quilt_h = self.grid_rows * tile_h
 
-        quilt_buf = [0.0] * total_px
+        total = quilt_w * quilt_h * 4
+        quilt_buf = [0.0] * total
 
-        # Worker for each output row
-        def render_row(y):
-            dst_start = y * quilt_w * 4
-            write_index = dst_start
+        # write each tile into its quilt block
+        for idx, pix in enumerate(tiles):
+            col = idx % self.grid_cols
+            row = idx // self.grid_cols
 
-            # For each pixel x in the row
-            for x in range(tile_w):
+            base_x = col * tile_w
+            base_y = row * tile_h
 
-                # For each tile in order — place one pixel RGBA
-                for t in range(num_tiles):
-                    tile = tiles[t]
+            for y in range(tile_h):
+                for x in range(tile_w):
+                    src_i = (y * tile_w + x) * 4
+                    dst_x = base_x + x
+                    dst_y = base_y + y
+                    dst_i = (dst_y * quilt_w + dst_x) * 4
+                    quilt_buf[dst_i:dst_i+4] = pix[src_i:src_i+4]
 
-                    # Source index for tile pixel
-                    src_index = (y * tile_w + x) * 4
+        return quilt_buf
 
-                    # Copy RGBA
+    # ==================================================================
+    # 2. CPU VERSION OF THE HOLOGRAPHIC SHADER
+    # ==================================================================
+    def build_display_image_from_quilt(self, quilt_buf, pitch, tilt, center, color_shift):
+        tile_w = self.tile_width
+        tile_h = self.tile_height
 
-                    quilt_buf[write_index:write_index + 4] = tile[src_index:src_index + 4]
-                    write_index += 4
+        out_w = tile_w
+        out_h = tile_h
 
-        # Parallelize the rows
-        with ThreadPoolExecutor(max_workers=max_workers) as ex:
-            list(ex.map(render_row, range(quilt_h)))
+        out_buf = [0.0] * (out_w * out_h * 4)
 
-        # Single assignment — Blender-friendly
-        self.quilt.pixels = quilt_buf
+        quilt_w = self.grid_cols * tile_w
 
-    def load_tile_pixels(self, path):
-        """Load one tile and return a flat float list of pixels."""
-        img = bpy.data.images.load(path)
-        # ensure loaded as list (not bpy_prop_array)
-        return list(img.pixels[:])
+        # helper: read pixel from a tile (view index)
+        def get_quilt_pixel(view, x, y):
+            col = view % self.grid_cols
+            row = view // self.grid_cols
+            qx = col * tile_w + x
+            qy = row * tile_h + y
+            i = (qy * quilt_w + qx) * 4
+            return quilt_buf[i:i+3]  # r g b
+
+        total_views = self.grid_cols * self.grid_rows
+
+        # Generate final image pixels
+        for y in range(out_h):
+            sy = y / out_h
+
+            for x in range(out_w):
+                sx = x / out_w
+
+                view_pick = (sx + color_shift + sy * tilt) * pitch - center
+                view_pick = view_pick - math.floor(view_pick)
+
+                # determine which tile to sample
+                view = int(view_pick * (total_views - 1))
+
+                # sample camera tile
+                r, g, b = get_quilt_pixel(view, x, y)
+
+                out_i = (y * out_w + x) * 4
+                out_buf[out_i:out_i+4] = (r, g, b, 1.0)
+
+        return out_buf
+
+
+def register():
+    bpy.utils.register_class(DisplayImageRenderer)
+
+
+def unregister():
+    bpy.utils.unregister_class(DisplayImageRenderer)

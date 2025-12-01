@@ -3,17 +3,9 @@ import math
 import os
 import threading
 
-from concurrent.futures import ThreadPoolExecutor
-
-# single-threaded: approximately 12 minutes (100x100)
-# multi-threaded: approximately 15 seconds (100x100)
-
-# multi-threaded: approximately 25 minutes (500x500)
-
 
 def load_pixels(filepath):
     image = bpy.data.images.load(filepath)
-    image.pixels[:]  # force loading
     return list(image.pixels)  # flat list of RGBA floats
 
 
@@ -86,20 +78,14 @@ class QuiltRenderer(bpy.types.Operator):
 
         # remove existing quilt image if present
         if quilt_name in bpy.data.images:
-            bpy.data.images.remove(bpy.data.images[quilt_name])
+            try:
+                bpy.data.images.remove(bpy.data.images[quilt_name])
+            except Exception:
+                pass
 
         self.quilt = bpy.data.images.new(quilt_name, width=self.quilt_width, height=self.quilt_height)
 
-        # ---- copy pixels tile by tile ----
-        max_workers = min(8, len(tile_paths))  # TODO: only temporary
-
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [
-                executor.submit(self.render_tile, idx, path)
-                for idx, path in enumerate(tile_paths)
-            ]
-            for f in futures:
-                f.result()
+        self.build_grid_image(tile_paths)
 
         # ---- save quilt ----
         quilt_path = os.path.join(target_directory, "quilt.png")
@@ -108,7 +94,6 @@ class QuiltRenderer(bpy.types.Operator):
         self.quilt.save()
 
         # cleanup
-        scene.render.filepath = orig_filepath
         for path in tile_paths:
             try:
                 os.remove(path)
@@ -131,29 +116,40 @@ class QuiltRenderer(bpy.types.Operator):
 
         return cameras
 
-    def render_tile(self, idx, path):
-        pixels = load_pixels(path)
-
-        col = idx % self.grid_cols
-        row = idx // self.grid_cols
-
+    def build_grid_image(self, tile_paths):
+        num_tiles = len(tile_paths)
         tile_w = self.tile_width
         tile_h = self.tile_height
 
         quilt_w = self.quilt_width
+        quilt_h = self.quilt_height
 
-        for y in range(tile_h):
-            # source row slice
-            src_start = y * tile_w * 4
-            src_end = src_start + tile_w * 4
+        # load each tile image into a plain list of floats
+        tiles = []
+        for p in tile_paths:
+            tiles.append(load_pixels(p))
 
-            row_data = pixels[src_start:src_end]
+        # allocate a buffer for the final quilt image (floats 0..1)
+        total_px = quilt_w * quilt_h * 4
+        quilt_buf = [0.0] * total_px
 
-            # destination row index in quilt
-            dst_y = row * tile_h + y
-            dst_start = (dst_y * quilt_w + col * tile_w) * 4
-            dst_end = dst_start + tile_w * 4
+        for t_index in range(num_tiles):
+            col = t_index % self.grid_cols
+            row = t_index // self.grid_cols
+            tile_pixels = tiles[t_index]  # flat list length tile_w*tile_h*4
 
-            # FAST: lock only around the shared pixel assignment
-            with self.write_lock:
-                self.quilt.pixels[dst_start:dst_end] = row_data
+            # For each pixel in the tile, copy into the quilt buffer at proper offset.
+            for ty in range(tile_h):
+                src_row_start = (ty * tile_w) * 4
+                dest_y = row * tile_h + ty
+                dest_row_start = (dest_y * quilt_w) * 4
+
+                dest_x_offset = col * tile_w * 4
+
+                # copy a whole row of pixels
+                # each pixel is 4 floats
+                src_idx = src_row_start
+                dst_idx = dest_row_start + dest_x_offset
+                quilt_buf[dst_idx: dst_idx + tile_w * 4] = tile_pixels[src_idx: src_idx + tile_w * 4]
+
+        self.quilt.pixels = quilt_buf
