@@ -142,7 +142,6 @@ class DisplayImageRenderer(bpy.types.Operator):
     # 1. BUILD THE QUILT GRID (NxM CAMERAS)
     # ==================================================================
     def build_grid_quilt(self, tile_paths):
-        num_tiles = len(tile_paths)
         tile_w = self.tile_width
         tile_h = self.tile_height
 
