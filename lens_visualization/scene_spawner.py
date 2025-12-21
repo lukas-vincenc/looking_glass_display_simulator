@@ -109,6 +109,8 @@ def spawn_wall():
 
 
 def spawn_floor():
+    target_coll = get_or_create_collection("Raycast_Targets")
+
     # clear old floors
     for obj in bpy.data.objects:
         if obj.name.startswith("Floor"):
@@ -120,6 +122,8 @@ def spawn_floor():
     )
     plane = bpy.context.object
     plane.name = f"Floor"
+
+    move_object_to_collection(plane, target_coll)
 
 
 def spawn_ray_source():
@@ -184,7 +188,7 @@ class SceneSpawner(bpy.types.Operator):
     def execute(self, context):
         spawn_lens()
         spawn_wall()
-        # spawn_floor()
+        spawn_floor()
         spawn_ray_source()
 
         return {'FINISHED'}
