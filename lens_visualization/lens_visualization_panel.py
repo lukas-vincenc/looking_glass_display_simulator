@@ -30,7 +30,7 @@ class CustomProps(bpy.types.PropertyGroup):
 
     ray_source_rotation: FloatProperty(
         name="Ray Source Rotation",
-        default=0.0,
+        default=90.0,
         subtype='ANGLE',
         unit='ROTATION',
         update=update_ray_source_rotation
