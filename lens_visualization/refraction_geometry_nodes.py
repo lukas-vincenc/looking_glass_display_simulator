@@ -161,11 +161,6 @@ def nodegroup_1_node_group():
     # Value_001
     math_002.inputs[1].default_value = 0.5
 
-    # Node Vector Math.010
-    vector_math_010 = nodegroup_1.nodes.new("ShaderNodeVectorMath")
-    vector_math_010.name = "Vector Math.010"
-    vector_math_010.operation = 'REFRACT'
-
     # Node Vector Math
     vector_math = nodegroup_1.nodes.new("ShaderNodeVectorMath")
     vector_math.name = "Vector Math"
@@ -323,27 +318,26 @@ def nodegroup_1_node_group():
     nodegroup_1.nodes["Index.001"].location = (-358.9630432128906, 321.79461669921875)
     nodegroup_1.nodes["Math.001"].location = (-123.86756896972656, 388.4984436035156)
     nodegroup_1.nodes["Math.002"].location = (-375.67529296875, 228.40689086914062)
-    nodegroup_1.nodes["Vector Math.010"].location = (-1182.9439697265625, -216.77630615234375)
     nodegroup_1.nodes["Vector Math"].location = (-934.2550659179688, -295.4033203125)
-    nodegroup_1.nodes["Math.003"].location = (-1370.7099609375, -496.2256164550781)
-    nodegroup_1.nodes["Mix"].location = (-1183.5499267578125, -399.62841796875)
-    nodegroup_1.nodes["Vector Math.001"].location = (-1808.164794921875, -994.9264526367188)
-    nodegroup_1.nodes["Vector Math.002"].location = (-1810.8717041015625, -1060.9267578125)
-    nodegroup_1.nodes["Vector Math.003"].location = (-1629.9503173828125, -1024.77197265625)
-    nodegroup_1.nodes["Math.004"].location = (-1212.81103515625, -1220.179931640625)
-    nodegroup_1.nodes["Math.005"].location = (-1213.5927734375, -1034.765625)
-    nodegroup_1.nodes["Math.006"].location = (-989.4061279296875, -1027.198974609375)
-    nodegroup_1.nodes["Math.007"].location = (-802.1400756835938, -1193.57958984375)
-    nodegroup_1.nodes["Math.008"].location = (-620.885009765625, -1106.01904296875)
-    nodegroup_1.nodes["Group Input.001"].location = (-2105.1103515625, -1136.850830078125)
-    nodegroup_1.nodes["Math.009"].location = (-402.4231872558594, -1265.3885498046875)
-    nodegroup_1.nodes["Math.010"].location = (-1212.1776123046875, -1461.3662109375)
-    nodegroup_1.nodes["Math.011"].location = (-201.8746337890625, -1352.3372802734375)
-    nodegroup_1.nodes["Vector Math.004"].location = (140.45396423339844, -1717.540283203125)
-    nodegroup_1.nodes["Group Input.002"].location = (-592.7059326171875, -1685.1065673828125)
-    nodegroup_1.nodes["Vector Math.005"].location = (395.3565979003906, -1694.71923828125)
-    nodegroup_1.nodes["Vector Math.006"].location = (134.86302185058594, -1629.5853271484375)
-    nodegroup_1.nodes["Math.012"].location = (-1448.484619140625, -1001.3099975585938)
+    nodegroup_1.nodes["Math.003"].location = (-1438.746826171875, -216.16876220703125)
+    nodegroup_1.nodes["Mix"].location = (-1211.2686767578125, -233.10813903808594)
+    nodegroup_1.nodes["Vector Math.001"].location = (-2138.599365234375, -605.4912109375)
+    nodegroup_1.nodes["Vector Math.002"].location = (-2141.30615234375, -671.4915161132812)
+    nodegroup_1.nodes["Vector Math.003"].location = (-1960.384765625, -635.3367309570312)
+    nodegroup_1.nodes["Math.004"].location = (-1543.24560546875, -830.7446899414062)
+    nodegroup_1.nodes["Math.005"].location = (-1544.02734375, -645.3303833007812)
+    nodegroup_1.nodes["Math.006"].location = (-1319.840576171875, -637.7637329101562)
+    nodegroup_1.nodes["Math.007"].location = (-1132.5745849609375, -804.1443481445312)
+    nodegroup_1.nodes["Math.008"].location = (-951.3195190429688, -716.5838012695312)
+    nodegroup_1.nodes["Group Input.001"].location = (-2435.544921875, -747.4155883789062)
+    nodegroup_1.nodes["Math.009"].location = (-732.857666015625, -875.9533081054688)
+    nodegroup_1.nodes["Math.010"].location = (-1542.612060546875, -1071.930908203125)
+    nodegroup_1.nodes["Math.011"].location = (-532.3091430664062, -962.9020385742188)
+    nodegroup_1.nodes["Vector Math.004"].location = (-189.9805450439453, -1328.10498046875)
+    nodegroup_1.nodes["Group Input.002"].location = (-923.1404418945312, -1295.67138671875)
+    nodegroup_1.nodes["Vector Math.005"].location = (64.92208862304688, -1305.283935546875)
+    nodegroup_1.nodes["Vector Math.006"].location = (-195.5714874267578, -1240.150146484375)
+    nodegroup_1.nodes["Math.012"].location = (-1778.919189453125, -611.874755859375)
     nodegroup_1.nodes["Switch"].location = (706.4102783203125, 296.622314453125)
     nodegroup_1.nodes["Group Input.003"].location = (463.76776123046875, 133.82357788085938)
 
@@ -371,9 +365,6 @@ def nodegroup_1_node_group():
 
     nodegroup_1.nodes["Math.002"].width  = 140.0
     nodegroup_1.nodes["Math.002"].height = 100.0
-
-    nodegroup_1.nodes["Vector Math.010"].width  = 140.0
-    nodegroup_1.nodes["Vector Math.010"].height = 100.0
 
     nodegroup_1.nodes["Vector Math"].width  = 140.0
     nodegroup_1.nodes["Vector Math"].height = 100.0
@@ -493,21 +484,6 @@ def nodegroup_1_node_group():
     nodegroup_1.links.new(
         nodegroup_1.nodes["Raycast.001"].outputs[2],
         nodegroup_1.nodes["Group Output"].inputs[2]
-    )
-    # group_input.Incoming -> vector_math_010.Vector
-    nodegroup_1.links.new(
-        nodegroup_1.nodes["Group Input"].outputs[0],
-        nodegroup_1.nodes["Vector Math.010"].inputs[0]
-    )
-    # group_input.Normal -> vector_math_010.Vector
-    nodegroup_1.links.new(
-        nodegroup_1.nodes["Group Input"].outputs[1],
-        nodegroup_1.nodes["Vector Math.010"].inputs[1]
-    )
-    # group_input.IOR -> vector_math_010.Scale
-    nodegroup_1.links.new(
-        nodegroup_1.nodes["Group Input"].outputs[6],
-        nodegroup_1.nodes["Vector Math.010"].inputs[3]
     )
     # vector_math.Vector -> raycast_001.Ray Direction
     nodegroup_1.links.new(
