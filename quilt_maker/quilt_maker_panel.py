@@ -1,3 +1,5 @@
+import math
+
 import bpy
 from bpy.props import (StringProperty, IntProperty, FloatProperty, PointerProperty)
 
@@ -29,6 +31,21 @@ class CustomProps(bpy.types.PropertyGroup):
         default="",
         description="Define the root path of the project",
         subtype='DIR_PATH'
+    )
+    qm_pitch: IntProperty(
+        name="Pitch",
+        default=355,
+        min=1,
+        max=1000
+    )
+    qm_tilt: FloatProperty(
+        name="Tilt",
+        default=0,
+        min=-math.pi / 2,
+        max=math.pi / 2,
+        subtype='ANGLE',
+        unit='ROTATION',
+        precision=5
     )
 
 
@@ -69,6 +86,10 @@ class QuiltMakerPanel(bpy.types.Panel):
         layout.separator()
 
         layout.label(text="Render Display Image:")
+
+        layout.prop(cus_pt, "qm_pitch")
+        layout.prop(cus_pt, "qm_tilt")
+
         layout.operator("qm.render_display_image")
 
 
@@ -89,11 +110,9 @@ def register():
 
     # TODO: change to qm_custom_props
     bpy.types.Scene.custom_props = bpy.props.PointerProperty(type=CustomProps)
-    bpy.types.Scene.shared_storage = bpy.props.PointerProperty(type=SharedStorage)
 
 
 def unregister():
     for cls in all_classes:
         bpy.utils.unregister_class(cls)
     del bpy.types.Scene.custom_props
-    del bpy.types.Scene.shared_storage

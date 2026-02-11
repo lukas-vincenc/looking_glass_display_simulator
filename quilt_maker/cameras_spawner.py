@@ -15,7 +15,6 @@ class CamerasSpawner(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         custom_props = scene.custom_props
-        shared_storage = scene.shared_storage
 
         focus_object = custom_props.qm_focus_object
         focus_distance = custom_props.qm_focus_distance
@@ -47,9 +46,6 @@ class CamerasSpawner(bpy.types.Operator):
             camera.data.lens_unit = 'FOV'
             camera.data.angle = math.radians(90)
             camera.data.shift_x = -x_axis / float(focus_distance * 2)
-
-            item = shared_storage.camera_names.add()
-            item.value = cam_name
 
         self.report({'INFO'}, "Spawning cameras complete")
         return {'FINISHED'}

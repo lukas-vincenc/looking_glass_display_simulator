@@ -14,8 +14,6 @@ class QuiltRenderer(bpy.types.Operator):
     bl_label = "Render Quilt"
     bl_description = "Render a quilt from the generated cameras"
 
-    shared_storage = None
-
     quilt_width = None
     quilt_height = None
     tile_width = None
@@ -31,7 +29,6 @@ class QuiltRenderer(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         custom_props = scene.custom_props
-        self.shared_storage = scene.shared_storage
 
         target_directory = custom_props.qm_quilt_render_target_directory
 
@@ -104,17 +101,9 @@ class QuiltRenderer(bpy.types.Operator):
 
     def collect_sorted_cameras(self):
         objs = bpy.data.objects
-
-        cameras = [
-            objs.get(item.value)
-            for item in self.shared_storage.camera_names
-            if objs.get(item.value)
-        ]
-
-        # sort by the index at the end of the camera name
-        cameras.sort(key=lambda cam: int(cam.name.split("_")[-1]))
-
-        return cameras
+        cams = [obj for obj in objs if obj.name.startswith("QuiltCamera")]
+        cams.sort(key=lambda cam: int(cam.name.split("_")[-1]))
+        return cams
 
     def build_grid_image(self, tile_paths):
         num_tiles = len(tile_paths)

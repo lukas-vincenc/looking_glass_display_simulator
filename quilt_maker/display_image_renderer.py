@@ -20,8 +20,6 @@ class DisplayImageRenderer(bpy.types.Operator):
     bl_label = "Render Display Image"
     bl_description = "Render a display-ready hologram image from quilt cameras"
 
-    shared_storage = None
-
     quilt_width = None
     quilt_height = None
     tile_width = None
@@ -39,7 +37,6 @@ class DisplayImageRenderer(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         custom_props = scene.custom_props
-        self.shared_storage = scene.shared_storage
 
         target_directory = custom_props.qm_quilt_render_target_directory
 
@@ -71,10 +68,10 @@ class DisplayImageRenderer(bpy.types.Operator):
         # Now run CPU shader to create final hologram display image:
         final_buf = self.build_display_image_from_quilt(
             quilt_buf,
-            pitch=354.677,
-            tilt=-0.113949,
-            center=-0.400272,
-            color_shift=0.00013
+            pitch=custom_props.qm_pitch,  # 354.677
+            tilt=custom_props.qm_tilt,  # -0.113949
+            center=-0.400272,  # -0.400272
+            color_shift=0.00013  # 0.00013
         )
 
         # create final image in Blender
@@ -97,8 +94,10 @@ class DisplayImageRenderer(bpy.types.Operator):
 
         # cleanup
         for p in tile_paths:
-            try: os.remove(p)
-            except: pass
+            try:
+                os.remove(p)
+            except:
+                pass
 
         return {'FINISHED'}
 
@@ -107,14 +106,8 @@ class DisplayImageRenderer(bpy.types.Operator):
     # ==================================================================
     def collect_sorted_cameras(self):
         objs = bpy.data.objects
-        cams = [
-            objs.get(item.value)
-            for item in self.shared_storage.camera_names
-            if objs.get(item.value)
-        ]
-        cams.sort(
-            key=lambda cam: int(cam.name.split("_")[-1])
-        )
+        cams = [obj for obj in objs if obj.name.startswith("QuiltCamera")]
+        cams.sort(key=lambda cam: int(cam.name.split("_")[-1]))
         return cams
 
     # ==================================================================
