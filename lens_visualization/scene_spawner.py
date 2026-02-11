@@ -63,13 +63,13 @@ def spawn_lens():
     # creates a matching cube to flatten the cylinder
     bpy.ops.mesh.primitive_cube_add(
         size=1,
-        location=(0, 10 + flatten_offset + 0.3, 0)
+        location=(0, 10 + flatten_offset + 0.5, 0)
     )
     cube = bpy.context.object
     cube.name = f"Flatten_Temp"
 
     cube.scale.x = lens_radius * 2.0
-    cube.scale.y = lens_radius + 0.6
+    cube.scale.y = lens_radius + 1
     cube.scale.z = lens_height
 
     bool_mod = cyl.modifiers.new(name="FlatSide", type='BOOLEAN')
