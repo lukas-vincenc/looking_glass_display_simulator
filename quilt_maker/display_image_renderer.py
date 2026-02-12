@@ -2,6 +2,7 @@ import bpy
 import math
 import os
 from concurrent.futures import ThreadPoolExecutor
+from time import gmtime, strftime
 
 
 # ------------------------------------------------------------
@@ -31,6 +32,10 @@ class DisplayImageRenderer(bpy.types.Operator):
     cam_count = None
     quilt = None
 
+    pitch = None  # 354.677
+    tilt = None  # -0.113949
+    center = 0  # -0.400272
+
     # ------------------------------------------------------------------
     # EXECUTE
     # ------------------------------------------------------------------
@@ -55,6 +60,9 @@ class DisplayImageRenderer(bpy.types.Operator):
         self.tile_width = scene.render.resolution_x
         self.tile_height = scene.render.resolution_y
 
+        self.pitch = custom_props.qm_pitch
+        self.tilt = math.degrees(custom_props.qm_tilt)
+
         # prepare temp render directory
         temp_dir = os.path.join(target_directory, "quilt_temp")
         os.makedirs(temp_dir, exist_ok=True)
@@ -68,9 +76,6 @@ class DisplayImageRenderer(bpy.types.Operator):
         # Now run CPU shader to create final hologram display image:
         final_buf = self.build_display_image_from_quilt(
             quilt_buf,
-            pitch=custom_props.qm_pitch,  # 354.677
-            tilt=custom_props.qm_tilt,  # -0.113949
-            center=-0.400272,  # -0.400272
             color_shift=0.00013  # 0.00013
         )
 
@@ -87,7 +92,7 @@ class DisplayImageRenderer(bpy.types.Operator):
         out_img.pixels = final_buf
 
         # save
-        out_path = os.path.join(target_directory, "display_image.png")
+        out_path = os.path.join(target_directory, self.build_file_name())
         out_img.filepath_raw = out_path
         out_img.file_format = 'PNG'
         out_img.save()
@@ -169,7 +174,7 @@ class DisplayImageRenderer(bpy.types.Operator):
     # ==================================================================
     # 2. CPU VERSION OF THE HOLOGRAPHIC SHADER
     # ==================================================================
-    def build_display_image_from_quilt(self, quilt_buf, pitch, tilt, center, color_shift):
+    def build_display_image_from_quilt(self, quilt_buf, color_shift):
         tile_w = self.tile_width
         tile_h = self.tile_height
 
@@ -198,7 +203,7 @@ class DisplayImageRenderer(bpy.types.Operator):
             for x in range(out_w):
                 sx = x / out_w
 
-                view_pick = (sx + color_shift + sy * tilt) * pitch - center
+                view_pick = (sx + color_shift + sy * (self.tilt / 100)) * self.pitch - self.center
                 view_pick = view_pick - math.floor(view_pick)
 
                 # determine which tile to sample
@@ -211,6 +216,10 @@ class DisplayImageRenderer(bpy.types.Operator):
                 out_buf[out_i:out_i+4] = (r, g, b, 1.0)
 
         return out_buf
+
+    def build_file_name(self):
+        now = strftime("%Y-%m-%d_%H-%M-%S", gmtime())
+        return now + '_pitch_' + str(self.pitch) + '_tilt_' + str(self.tilt) + '_center_' + str(self.center) + '.png'
 
 
 def register():
