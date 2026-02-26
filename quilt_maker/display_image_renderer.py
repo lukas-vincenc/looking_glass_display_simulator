@@ -1,21 +1,47 @@
 import bpy
 import math
 import os
+import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 from time import gmtime, strftime
 
 
-# ------------------------------------------------------------
-# Helper: Load tile pixels
-# ------------------------------------------------------------
 def load_pixels(filepath):
     img = bpy.data.images.load(filepath)
     return list(img.pixels[:])  # flat RGBA floats
 
 
-# ======================================================================
-#   MAIN OPERATOR
-# ======================================================================
+def load_tiles(tile_paths):
+    with ThreadPoolExecutor(max_workers=min(os.cpu_count(), 16)) as ex:
+        return list(ex.map(load_pixels, tile_paths))
+
+
+def render_all_tiles(scene, cameras, temp_dir):
+    orig_cam = scene.camera
+    orig_path = scene.render.filepath
+
+    tile_paths = []
+
+    for idx, cam in enumerate(cameras):
+        scene.camera = cam
+        out_path = os.path.join(temp_dir, f"tile_{idx:03d}.png")
+        scene.render.filepath = out_path
+        bpy.ops.render.render(write_still=True)
+        tile_paths.append(out_path)
+
+    scene.camera = orig_cam
+    scene.render.filepath = orig_path
+
+    return tile_paths
+
+
+def collect_sorted_cameras():
+    objs = bpy.data.objects
+    cams = [obj for obj in objs if obj.name.startswith("QuiltCamera")]
+    cams.sort(key=lambda cam: int(cam.name.split("_")[-1]))
+    return cams
+
+
 class DisplayImageRenderer(bpy.types.Operator):
     bl_idname = "qm.render_display_image"
     bl_label = "Render Display Image"
@@ -35,6 +61,7 @@ class DisplayImageRenderer(bpy.types.Operator):
     pitch = None  # 354.677
     tilt = None  # -0.113949
     center = 0  # -0.400272
+    color_shift = 0.00013  # 0.00013
 
     # ------------------------------------------------------------------
     # EXECUTE
@@ -49,7 +76,7 @@ class DisplayImageRenderer(bpy.types.Operator):
             self.report({'ERROR'}, "Please select a target directory")
             return {'CANCELLED'}
 
-        cameras = self.collect_sorted_cameras()
+        cameras = collect_sorted_cameras()
         if not cameras:
             self.report({'ERROR'}, "No quilt camera list found. Spawn cameras first.")
             return {'CANCELLED'}
@@ -63,21 +90,17 @@ class DisplayImageRenderer(bpy.types.Operator):
         self.pitch = custom_props.qm_pitch
         self.tilt = math.degrees(custom_props.qm_tilt)
 
+        bpy.context.scene.use_nodes = False
+
         # prepare temp render directory
         temp_dir = os.path.join(target_directory, "quilt_temp")
         os.makedirs(temp_dir, exist_ok=True)
 
         # render all cameras
-        tile_paths = self.render_all_tiles(scene, cameras, temp_dir)
+        tile_paths = render_all_tiles(scene, cameras, temp_dir)
 
-        # build quilt grid (NxM quilt texture)
-        quilt_buf = self.build_grid_quilt(tile_paths)
-
-        # Now run CPU shader to create final hologram display image:
-        final_buf = self.build_display_image_from_quilt(
-            quilt_buf,
-            color_shift=0.00013  # 0.00013
-        )
+        tiles = load_tiles(tile_paths)
+        final_buf = self.build_display_image_from_tiles(tiles)
 
         # create final image in Blender
         out_name = "Display_Image"
@@ -106,116 +129,73 @@ class DisplayImageRenderer(bpy.types.Operator):
 
         return {'FINISHED'}
 
-    # ==================================================================
-    # CAMERA COLLECTION
-    # ==================================================================
-    def collect_sorted_cameras(self):
-        objs = bpy.data.objects
-        cams = [obj for obj in objs if obj.name.startswith("QuiltCamera")]
-        cams.sort(key=lambda cam: int(cam.name.split("_")[-1]))
-        return cams
-
-    # ==================================================================
-    # RENDER TILES
-    # ==================================================================
-    def render_all_tiles(self, scene, cameras, temp_dir):
-        orig_cam = scene.camera
-        orig_path = scene.render.filepath
-
-        tile_paths = []
-
-        for idx, cam in enumerate(cameras):
-            scene.camera = cam
-            out_path = os.path.join(temp_dir, f"tile_{idx:03d}.png")
-            scene.render.filepath = out_path
-            bpy.ops.render.render(write_still=True)
-            tile_paths.append(out_path)
-
-        scene.camera = orig_cam
-        scene.render.filepath = orig_path
-
-        return tile_paths
-
-    # ==================================================================
-    # 1. BUILD THE QUILT GRID (NxM CAMERAS)
-    # ==================================================================
-    def build_grid_quilt(self, tile_paths):
+    def build_display_image_from_tiles(self, tiles):
         tile_w = self.tile_width
         tile_h = self.tile_height
-
-        # load tiles in parallel
-        with ThreadPoolExecutor(max_workers=min(os.cpu_count(), 16)) as ex:
-            tiles = list(ex.map(load_pixels, tile_paths))
-
-        quilt_w = self.grid_cols * tile_w
-        quilt_h = self.grid_rows * tile_h
-
-        total = quilt_w * quilt_h * 4
-        quilt_buf = [0.0] * total
-
-        # write each tile into its quilt block
-        for idx, pix in enumerate(tiles):
-            col = idx % self.grid_cols
-            row = idx // self.grid_cols
-
-            base_x = col * tile_w
-            base_y = row * tile_h
-
-            for y in range(tile_h):
-                for x in range(tile_w):
-                    src_i = (y * tile_w + x) * 4
-                    dst_x = base_x + x
-                    dst_y = base_y + y
-                    dst_i = (dst_y * quilt_w + dst_x) * 4
-                    quilt_buf[dst_i:dst_i+4] = pix[src_i:src_i+4]
-
-        return quilt_buf
-
-    # ==================================================================
-    # 2. CPU VERSION OF THE HOLOGRAPHIC SHADER
-    # ==================================================================
-    def build_display_image_from_quilt(self, quilt_buf, color_shift):
-        tile_w = self.tile_width
-        tile_h = self.tile_height
-
         out_w = tile_w
         out_h = tile_h
 
+        total_views = len(tiles)
         out_buf = [0.0] * (out_w * out_h * 4)
 
-        quilt_w = self.grid_cols * tile_w
+        tilt_factor = self.tilt / 100
+        pitch = self.pitch
+        center = self.center
+        cs = self.color_shift
 
-        # helper: read pixel from a tile (view index)
-        def get_quilt_pixel(view, x, y):
-            col = view % self.grid_cols
-            row = view // self.grid_cols
-            qx = col * tile_w + x
-            qy = row * tile_h + y
-            i = (qy * quilt_w + qx) * 4
-            return quilt_buf[i:i+3]  # r g b
-
-        total_views = self.grid_cols * self.grid_rows
-
-        # Generate final image pixels
         for y in range(out_h):
             sy = y / out_h
+            row_offset = y * tile_w * 4
 
             for x in range(out_w):
                 sx = x / out_w
 
-                view_pick = (sx + color_shift + sy * (self.tilt / 100)) * self.pitch - self.center
+                view_pick = (sx + cs + sy * tilt_factor) * pitch - center
                 view_pick = view_pick - math.floor(view_pick)
 
-                # determine which tile to sample
                 view = int(view_pick * (total_views - 1))
 
-                # sample camera tile
-                r, g, b = get_quilt_pixel(view, x, y)
+                src_i = row_offset + x * 4
+                r = tiles[view][src_i]
+                g = tiles[view][src_i + 1]
+                b = tiles[view][src_i + 2]
 
                 out_i = (y * out_w + x) * 4
-                out_buf[out_i:out_i+4] = (r, g, b, 1.0)
+                out_buf[out_i:out_i + 4] = (r, g, b, 1.0)
 
         return out_buf
+
+    def build_display_image_numpy(self, tiles_list):
+        # tiles_list is a list of flat pixel arrays
+        tile_w, tile_h = self.tile_width, self.tile_height
+        num_views = len(tiles_list)
+
+        # 1. Convert tiles to a single 3D numpy array: (View, PixelIndex, RGBA)
+        # This takes some memory, but is much faster for lookup
+        all_views = np.array(tiles_list, dtype=np.float32)
+
+        # 2. Create a grid of coordinates
+        y_coords, x_coords = np.mgrid[0:tile_h, 0:tile_w]
+
+        # Normalize coordinates
+        sx = x_coords / tile_w
+        sy = y_coords / tile_h
+
+        # 3. Vectorized math (The view_pick formula)
+        tilt_factor = self.tilt / 100
+        view_indices = (sx + self.color_shift + sy * tilt_factor) * self.pitch - self.center
+        view_indices = (view_indices - np.floor(view_indices)) * (num_views - 1)
+        view_indices = view_indices.astype(np.int32)
+
+        # 4. Advanced Indexing
+        # We need to map (y, x) to the correct view and the correct pixel index
+        pixel_indices = (y_coords * tile_w + x_coords)
+
+        # This extracts the correct R, G, B, A for every pixel at once
+        # Result shape: (tile_h, tile_w, 4)
+        final_image = all_views[view_indices, pixel_indices]
+
+        return final_image.flatten()
 
     def build_file_name(self):
         now = strftime("%Y-%m-%d_%H-%M-%S", gmtime())
