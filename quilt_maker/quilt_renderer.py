@@ -1,30 +1,18 @@
 import bpy
 import math
 import os
-import threading
-
-
-def load_pixels(filepath):
-    image = bpy.data.images.load(filepath)
-    return list(image.pixels)  # flat list of RGBA floats
 
 
 class QuiltRenderer(bpy.types.Operator):
     bl_idname = "qm.render_quilt"
     bl_label = "Render Quilt"
-    bl_description = "Render a quilt from the generated cameras"
+    bl_description = "Render a quilt from the generated cameras using compositor"
 
-    quilt_width = None
-    quilt_height = None
     tile_width = None
     tile_height = None
 
     grid_cols = None
     grid_rows = None
-
-    quilt = None
-
-    write_lock = threading.Lock()
 
     def execute(self, context):
         scene = context.scene
@@ -42,103 +30,147 @@ class QuiltRenderer(bpy.types.Operator):
             return {'CANCELLED'}
 
         cam_count = len(cameras)
+
         self.grid_cols = math.ceil(math.sqrt(cam_count))
         self.grid_rows = math.ceil(cam_count / self.grid_cols)
+
         self.tile_width = scene.render.resolution_x
         self.tile_height = scene.render.resolution_y
 
-        # prepare output directory
+        # -------------------------------------------------
+        # Prepare temp directory
+        # -------------------------------------------------
         temp_dir = os.path.join(target_directory, "quilt_temp")
         os.makedirs(temp_dir, exist_ok=True)
 
-        # render each camera
+        # -------------------------------------------------
+        # Render tiles
+        # -------------------------------------------------
         orig_camera = scene.camera
         orig_filepath = scene.render.filepath
+        bpy.context.scene.use_nodes = False
 
         tile_paths = []
 
         for idx, cam in enumerate(cameras):
             scene.camera = cam
             out_path = os.path.join(temp_dir, f"tile_{idx:03d}.png")
+            out_path = os.path.normpath(os.path.abspath(out_path))
             scene.render.filepath = out_path
+            scene.render.image_settings.file_format = 'PNG'
+            scene.render.image_settings.color_mode = 'RGBA'
 
             bpy.ops.render.render(write_still=True)
+            bpy.context.view_layer.update()
+
+            if not os.path.exists(out_path):
+                raise RuntimeError(f"Render failed: {out_path}")
+
             tile_paths.append(out_path)
 
         scene.camera = orig_camera
         scene.render.filepath = orig_filepath
 
-        # ---- create quilt image ----
-        self.quilt_width = self.grid_cols * self.tile_width
-        self.quilt_height = self.grid_rows * self.tile_height
-        quilt_name = "Quilt_Image"
+        # -------------------------------------------------
+        # Build compositor quilt
+        # -------------------------------------------------
+        self.build_quilt_compositor(
+            scene=scene,
+            tile_paths=tile_paths,
+            output_path=os.path.join(target_directory, "quilt.png")
+        )
 
-        # remove existing quilt image if present
-        if quilt_name in bpy.data.images:
+        # -------------------------------------------------
+        # Cleanup temp tiles
+        # -------------------------------------------------
+        for p in tile_paths:
             try:
-                bpy.data.images.remove(bpy.data.images[quilt_name])
-            except Exception:
+                os.remove(p)
+            except:
                 pass
 
-        self.quilt = bpy.data.images.new(quilt_name, width=self.quilt_width, height=self.quilt_height)
-
-        self.build_grid_image(tile_paths)
-
-        # ---- save quilt ----
-        quilt_path = os.path.join(target_directory, "quilt.png")
-        self.quilt.filepath_raw = quilt_path
-        self.quilt.file_format = 'PNG'
-        self.quilt.save()
-
-        # cleanup
-        for path in tile_paths:
-            try:
-                os.remove(path)
-            except OSError:
-                pass
-
+        self.report({'INFO'}, "Quilt rendered successfully")
         return {'FINISHED'}
 
+    # -------------------------------------------------
+    # Camera collection
+    # -------------------------------------------------
     def collect_sorted_cameras(self):
         objs = bpy.data.objects
         cams = [obj for obj in objs if obj.name.startswith("QuiltCamera")]
         cams.sort(key=lambda cam: int(cam.name.split("_")[-1]))
         return cams
 
-    def build_grid_image(self, tile_paths):
-        num_tiles = len(tile_paths)
-        tile_w = self.tile_width
-        tile_h = self.tile_height
+    # -------------------------------------------------
+    # Compositor builder
+    # -------------------------------------------------
+    def build_quilt_compositor(self, scene, tile_paths, output_path):
+        scene.use_nodes = True
+        nt = scene.node_tree
+        nt.nodes.clear()
 
-        quilt_w = self.quilt_width
-        quilt_h = self.quilt_height
+        quilt_w = self.grid_cols * self.tile_width
+        quilt_h = self.grid_rows * self.tile_height
 
-        # load each tile image into a plain list of floats
-        tiles = []
-        for p in tile_paths:
-            tiles.append(load_pixels(p))
+        orig_resolution_x = scene.render.resolution_x
+        orig_resolution_y = scene.render.resolution_y
 
-        # allocate a buffer for the final quilt image (floats 0..1)
-        total_px = quilt_w * quilt_h * 4
-        quilt_buf = [0.0] * total_px
+        # resize render canvas
+        scene.render.resolution_x = quilt_w
+        scene.render.resolution_y = quilt_h
+        scene.render.resolution_percentage = 100
 
-        for t_index in range(num_tiles):
-            col = t_index % self.grid_cols
-            row = t_index // self.grid_cols
-            tile_pixels = tiles[t_index]  # flat list length tile_w*tile_h*4
+        comp_node = nt.nodes.new("CompositorNodeComposite")
+        comp_node.location = (1200, 0)
 
-            # For each pixel in the tile, copy into the quilt buffer at proper offset.
-            for ty in range(tile_h):
-                src_row_start = (ty * tile_w) * 4
-                dest_y = row * tile_h + ty
-                dest_row_start = (dest_y * quilt_w) * 4
+        # -------------------------------------------------
+        # FULL-SIZE TRANSPARENT CANVAS
+        # -------------------------------------------------
+        bg_img = bpy.data.images.new(
+            name="Quilt_BG",
+            width=quilt_w,
+            height=quilt_h,
+            alpha=True
+        )
 
-                dest_x_offset = col * tile_w * 4
+        bg_node = nt.nodes.new("CompositorNodeImage")
+        bg_node.image = bg_img
+        bg_node.location = (-300, 0)
+        alpha_chain = bg_node
 
-                # copy a whole row of pixels
-                # each pixel is 4 floats
-                src_idx = src_row_start
-                dst_idx = dest_row_start + dest_x_offset
-                quilt_buf[dst_idx: dst_idx + tile_w * 4] = tile_pixels[src_idx: src_idx + tile_w * 4]
+        for i, path in enumerate(tile_paths):
+            col = i % self.grid_cols
+            row = i // self.grid_cols
 
-        self.quilt.pixels = quilt_buf
+            img_node = nt.nodes.new("CompositorNodeImage")
+            img_node.image = bpy.data.images.load(path)
+            img_node.location = (0, -300 * i)
+
+            trans_node = nt.nodes.new("CompositorNodeTransform")
+            trans_node.inputs['X'].default_value = ((self.grid_cols-1)/2 - col) * self.tile_width
+            trans_node.inputs['Y'].default_value = ((self.grid_rows-1)/2 - row) * self.tile_height
+            trans_node.inputs['Scale'].default_value = 1.0
+            trans_node.location = (300, -300 * i)
+
+            nt.links.new(img_node.outputs['Image'], trans_node.inputs['Image'])
+
+            mix = nt.nodes.new("CompositorNodeAlphaOver")
+            mix.location = (600, -300 * i)
+
+            # background → input 1
+            nt.links.new(alpha_chain.outputs[0], mix.inputs[1])
+            # tile → input 2
+            nt.links.new(trans_node.outputs['Image'], mix.inputs[2])
+
+            alpha_chain = mix
+
+        nt.links.new(alpha_chain.outputs['Image'], comp_node.inputs['Image'])
+
+        scene.render.filepath = os.path.normpath(os.path.abspath(output_path))
+        scene.render.image_settings.file_format = 'PNG'
+        scene.render.image_settings.color_mode = 'RGBA'
+
+        bpy.ops.render.render(write_still=True)
+
+        scene.render.resolution_x = orig_resolution_x
+        scene.render.resolution_y = orig_resolution_y
