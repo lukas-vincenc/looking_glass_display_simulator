@@ -1,56 +1,9 @@
 import math
 
-import bmesh
 import bpy
 from bpy.props import IntProperty, FloatProperty, StringProperty
-from mathutils import Vector, Euler
 
 from .display_spawner import DisplaySpawner
-
-
-def lean_mesh_from_base_fixed(obj, rot_euler):
-    """Lean mesh forward around base pivot without moving base in world space."""
-    mesh = obj.data
-    bm = bmesh.new()
-    bm.from_mesh(mesh)
-
-    # compute bottom-center pivot in object local space
-    bbox = [Vector(v) for v in obj.bound_box]
-    min_z = min(v.z for v in bbox)
-    avg_x = sum(v.x for v in bbox) / 8
-    avg_y = sum(v.y for v in bbox) / 8
-    pivot = Vector((avg_x, avg_y, min_z))
-
-    # compute horizontal offset introduced by rotation
-    angle_y = rot_euler.y  # rotation around Y
-    width = max(v.co.x for v in bm.verts) - min(v.co.x for v in bm.verts)
-
-    horizontal_shift = pivot.x - (pivot.x * math.cos(angle_y) - width/2 * math.sin(angle_y))
-
-    # apply rotation around pivot
-    rot_mat = rot_euler.to_matrix().to_4x4()
-    for v in bm.verts:
-        v.co = rot_mat @ (v.co - pivot) + pivot
-
-    # move mesh back so base stays fixed
-    for v in bm.verts:
-        v.co.x -= horizontal_shift
-
-    bm.to_mesh(mesh)
-    bm.free()
-
-
-def restore_base_mesh(obj):
-    base = obj.get("_base_mesh")
-    if base is None:
-        return
-
-    bm = bmesh.new()
-    bm.from_mesh(base)
-
-    obj.data.clear_geometry()
-    bm.to_mesh(obj.data)
-    bm.free()
 
 
 def update_lens_tilt(self, context):
@@ -58,11 +11,7 @@ def update_lens_tilt(self, context):
     if obj is None:
         return
 
-    # restore original mesh (pre-lean)
-    restore_base_mesh(obj)
-
-    # apply lean
-    lean_mesh_from_base_fixed(obj, Euler((0, self.lds_tilt, 0), 'XYZ'))
+    obj.rotation_euler.y = self.lds_tilt
 
 
 def update_lens_pitch(self, context):
@@ -107,7 +56,7 @@ def update_image_plane(self, context):
     # Set correct aspect ratio
     plane.scale.y = 1.0 if img.size[0] == 0 else img.size[1] / img.size[0]
     plane.location.x = 0.5
-    plane.location.y = 0.005
+    plane.location.y = 0
 
     # Create material
     mat = bpy.data.materials.new(name="ImageMaterial")
@@ -166,8 +115,8 @@ class CustomProps(bpy.types.PropertyGroup):
     lds_tilt: FloatProperty(
         name="Tilt",
         default=0,
-        min=-math.pi/2,
-        max=math.pi/2,
+        min=-math.pi / 2,
+        max=math.pi / 2,
         subtype='ANGLE',
         unit='ROTATION',
         precision=5,

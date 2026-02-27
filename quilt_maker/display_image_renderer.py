@@ -148,7 +148,7 @@ class DisplayImageRenderer(bpy.types.Operator):
             row_offset = y * tile_w * 4
 
             for x in range(out_w):
-                sx = x / out_w
+                sx = 1 - (x / out_w)
 
                 view_pick = (sx + cs + sy * tilt_factor) * pitch - center
                 view_pick = view_pick - math.floor(view_pick)

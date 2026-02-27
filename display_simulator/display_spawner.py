@@ -1,28 +1,7 @@
+import math
+
 import bpy
-import bmesh
-from mathutils import Vector, Euler
-
-
-def lean_mesh_from_base(obj, rot_euler):
-    mesh = obj.data
-    bm = bmesh.new()
-    bm.from_mesh(mesh)
-
-    # Compute bottom-center in local space
-    bbox = [Vector(v) for v in obj.bound_box]
-    min_z = min(v.z for v in bbox)
-    avg_x = sum(v.x for v in bbox) / 8
-    avg_y = sum(v.y for v in bbox) / 8
-    pivot = Vector((avg_x, avg_y, min_z))  # base pivot
-
-    rot_mat = rot_euler.to_matrix().to_4x4()
-
-    for v in bm.verts:
-        v.co = rot_mat @ (v.co - pivot) + pivot
-
-    bm.to_mesh(mesh)
-    bm.free()
-
+from mathutils import Vector
 
 
 def get_lens_material():
@@ -56,9 +35,12 @@ def get_lens_material():
 def flatten_lens_on_side(lens, side, lens_radius, lens_height):
     flatten_offset = lens_radius * 0.5
 
+    location_x = lens_radius * (3 / 4)
+    location_y = - (lens_radius + 0.6 * lens_radius) - 0.000001
+
     bpy.ops.mesh.primitive_cube_add(
         size=1,
-        location=(side * lens_radius, flatten_offset, 0)
+        location=(location_x + side * lens_radius, location_y + flatten_offset, 0)
     )
     cube = bpy.context.object
     cube.name = f"Flatten"
@@ -99,12 +81,15 @@ def set_origin_bottom_center(obj):
 def get_lens(lens_radius, lens_height, lens_tilt, cylinder_vertices, material):
     flatten_offset = lens_radius * 0.5
 
+    location_x = lens_radius * (3 / 4)
+    location_y = - (lens_radius + 0.6 * lens_radius) - 0.000001
+
     # creates a cylinder
     bpy.ops.mesh.primitive_cylinder_add(
         vertices=cylinder_vertices,
         radius=lens_radius,
         depth=lens_height,
-        location=(0, 0, 0)
+        location=(location_x, location_y, 0)
     )
     lens = bpy.context.object
     lens.name = f"Lens"
@@ -112,7 +97,7 @@ def get_lens(lens_radius, lens_height, lens_tilt, cylinder_vertices, material):
     # creates a matching cube to flatten the cylinder
     bpy.ops.mesh.primitive_cube_add(
         size=1,
-        location=(0, flatten_offset + 0.3 * lens_radius, 0)
+        location=(location_x, location_y + flatten_offset + 0.3 * lens_radius, 0)
     )
     cube = bpy.context.object
     cube.name = f"Flatten"
@@ -134,7 +119,7 @@ def get_lens(lens_radius, lens_height, lens_tilt, cylinder_vertices, material):
     flatten_lens_on_side(lens, -1, lens_radius, lens_height)
     flatten_lens_on_side(lens, 1, lens_radius, lens_height)
 
-    lean_mesh_from_base(lens, Euler((0, lens_tilt, 0), 'XYZ'))
+    lens.rotation_euler.y = lens_tilt
 
     # assign lens material
     if len(lens.data.materials) == 0:
@@ -160,9 +145,12 @@ class DisplaySpawner(bpy.types.Operator):
         scene = context.scene
         custom_props = scene.lds_custom_props
 
-        lens_radius = (self.DISPLAY_WIDTH / custom_props.lds_pitch / 2) * (4 / 3)
-        lens_height = self.DISPLAY_WIDTH * custom_props.lds_height / custom_props.lds_width
         lens_tilt = custom_props.lds_tilt
+
+        tilted_display_width = self.DISPLAY_WIDTH * math.cos(lens_tilt)
+
+        lens_radius = (tilted_display_width / custom_props.lds_pitch / 2) * (4 / 3)
+        lens_height = self.DISPLAY_WIDTH * custom_props.lds_height / custom_props.lds_width
         cylinder_vertices = 512
 
         # clear old lenses
