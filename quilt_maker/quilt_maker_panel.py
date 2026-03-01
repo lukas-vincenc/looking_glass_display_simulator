@@ -51,6 +51,12 @@ class CustomProps(bpy.types.PropertyGroup):
         unit='ROTATION',
         precision=5
     )
+    qm_center: FloatProperty(
+        name="Center",
+        default=0,
+        min=-1,
+        max=1,
+    )
     qm_x_views: IntProperty(
         name="X",
         default=8,
@@ -125,6 +131,7 @@ class QuiltMakerPanel(bpy.types.Panel):
 
         layout.prop(cus_pt, "qm_pitch")
         layout.prop(cus_pt, "qm_tilt")
+        layout.prop(cus_pt, "qm_center")
 
         layout.operator("qm.render_display_image")
 

@@ -60,7 +60,7 @@ class DisplayImageRenderer(bpy.types.Operator):
 
     pitch = None  # 354.677
     tilt = None  # -0.113949
-    center = 0  # -0.400272
+    center = None  # -0.400272
     color_shift = 0.00013  # 0.00013
 
     # ------------------------------------------------------------------
@@ -89,6 +89,7 @@ class DisplayImageRenderer(bpy.types.Operator):
 
         self.pitch = custom_props.qm_pitch
         self.tilt = math.degrees(custom_props.qm_tilt)
+        self.center = custom_props.qm_center
 
         bpy.context.scene.use_nodes = False
 
