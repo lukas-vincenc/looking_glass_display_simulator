@@ -130,6 +130,7 @@ def get_lens(lens_radius, lens_height, lens_tilt, center, cylinder_vertices, mat
 
     lens.location.x = center * lens_radius * 2 * (3 / 4)
     lens.location.y = - 0.000001
+    lens.location.z = 0
 
     lens["_base_size"] = (size_x, size_y, size_z)
     lens["_base_mesh"] = lens.data.copy()
@@ -155,10 +156,12 @@ class DisplaySpawner(bpy.types.Operator):
         lens_tilt = custom_props.lds_tilt
         center = custom_props.lds_center
 
-        tilted_display_width = self.DISPLAY_WIDTH * math.cos(lens_tilt)
+        tilted_display_width = self.DISPLAY_WIDTH * math.cos(abs(lens_tilt))
+
+        lens_height = (self.DISPLAY_WIDTH * math.sin(abs(lens_tilt))
+                       + (custom_props.lds_height / custom_props.lds_width) * math.cos(abs(lens_tilt)))
 
         lens_radius = (tilted_display_width / custom_props.lds_pitch / 2) * (4 / 3)
-        lens_height = self.DISPLAY_WIDTH * custom_props.lds_height / custom_props.lds_width
         cylinder_vertices = 512
 
         # clear old lenses

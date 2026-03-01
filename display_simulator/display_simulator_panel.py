@@ -14,10 +14,12 @@ def recalc_lens_geometry(obj, custom_props, display_width):
 
     lens_tilt = custom_props.lds_tilt
     center = custom_props.lds_center
-    tilted_display_width = display_width * math.cos(lens_tilt)
+
+    tilted_display_width = display_width * math.cos(abs(lens_tilt))
+    lens_height = (display_width * math.sin(abs(lens_tilt))
+                   + (custom_props.lds_height / custom_props.lds_width) * math.cos(abs(lens_tilt)))
 
     lens_radius = (tilted_display_width / custom_props.lds_pitch / 2) * (4 / 3)
-    lens_height = display_width * custom_props.lds_height / custom_props.lds_width
 
     # Reset mesh
     obj.data = obj["_base_mesh"].copy()
@@ -100,6 +102,7 @@ def update_image_plane(self, context):
     plane.scale.y = 1.0 if img.size[0] == 0 else img.size[1] / img.size[0]
     plane.location.x = 0.5
     plane.location.y = 0
+    plane.location.z = plane.scale.y / 2
 
     # Create material
     mat = bpy.data.materials.new(name="ImageMaterial")

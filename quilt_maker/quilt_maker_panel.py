@@ -85,7 +85,6 @@ class CustomProps(bpy.types.PropertyGroup):
     )
 
 
-
 class QuiltMakerPanel(bpy.types.Panel):
     bl_label = "Quilt Maker"
     bl_idname = "QUILT_MAKER_PANEL_PT_qm"
@@ -95,7 +94,7 @@ class QuiltMakerPanel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        cus_pt = context.scene.custom_props
+        cus_pt = context.scene.qm_custom_props
 
         layout.label(text="Spawn Camera Array:", icon="OUTLINER_COLLECTION")
 
@@ -150,10 +149,10 @@ def register():
         bpy.utils.register_class(cls)
 
     # TODO: change to qm_custom_props
-    bpy.types.Scene.custom_props = bpy.props.PointerProperty(type=CustomProps)
+    bpy.types.Scene.qm_custom_props = bpy.props.PointerProperty(type=CustomProps)
 
 
 def unregister():
     for cls in all_classes:
         bpy.utils.unregister_class(cls)
-    del bpy.types.Scene.custom_props
+    del bpy.types.Scene.qm_custom_props

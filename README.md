@@ -57,6 +57,11 @@ At this point I don't have a solution for this, and I'm not sure
 that I'll have one. My suspicion is that that's caused by some 
 rounding errors in the background.
 
+### The display simulator breaks a little with negative tilt.
+
+The calculation of that is not yet perfect. 
+However, it's still a little usable.
+
 # TODO
 
 - Speed up the display image rendering (currently a 4K image took around 7 minutes to render on my PC)

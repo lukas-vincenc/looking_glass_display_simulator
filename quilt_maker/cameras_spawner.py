@@ -14,7 +14,7 @@ class CamerasSpawner(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        custom_props = scene.custom_props
+        custom_props = scene.qm_custom_props
 
         focus_object = custom_props.qm_focus_object
         focus_distance = custom_props.qm_focus_distance

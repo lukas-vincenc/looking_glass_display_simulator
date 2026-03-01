@@ -68,7 +68,7 @@ class DisplayImageRenderer(bpy.types.Operator):
     # ------------------------------------------------------------------
     def execute(self, context):
         scene = context.scene
-        custom_props = scene.custom_props
+        custom_props = scene.qm_custom_props
 
         target_directory = custom_props.qm_quilt_render_target_directory
 
