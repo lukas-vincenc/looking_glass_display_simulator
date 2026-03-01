@@ -39,14 +39,14 @@ in the Rendered Viewport
 
 # Known issues
 
-## Blender freezes when rendering the quilt or the display image.
+### Blender freezes when rendering the quilt or the display image.
 
 After pressing the Render button Blender seems to freeze,
 but it's working silently in the background. Once it's done, 
 it unfreezes. So far I don't have a solution for this one, 
 but I have some things to experiment with.
 
-## Tilt is a little imprecise.
+### Tilt is a little imprecise.
 
 Tested out a display image render out with the tilt of 11 degrees.
 The display with lens tilted exactly 11 degrees displays the image,
