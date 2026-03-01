@@ -8,11 +8,15 @@ from .display_image_renderer import DisplayImageRenderer
 from .quilt_renderer import QuiltRenderer
 
 
+def update_camera_count(self, context):
+    self.qm_camera_count = self.qm_x_views * self.qm_y_views
+
+
 # Custom properties shown in the extension UI panel
 class CustomProps(bpy.types.PropertyGroup):
     qm_camera_count: IntProperty(
         name="Camera Count",
-        default=45,
+        default=48,
         min=1,
         max=200
     )
@@ -47,15 +51,33 @@ class CustomProps(bpy.types.PropertyGroup):
         unit='ROTATION',
         precision=5
     )
+    qm_x_views: IntProperty(
+        name="X",
+        default=8,
+        min=1,
+        max=100,
+        update=update_camera_count
+    )
+    qm_y_views: IntProperty(
+        name="Y",
+        default=6,
+        min=1,
+        max=100,
+        update=update_camera_count
+    )
+    qm_view_x_resolution: IntProperty(
+        name="X",
+        default=960,
+        min=1,
+        max=10000
+    )
+    qm_view_y_resolution: IntProperty(
+        name="Y",
+        default=720,
+        min=1,
+        max=10000
+    )
 
-
-class StringValueItem(bpy.types.PropertyGroup):
-    value: bpy.props.StringProperty()
-
-
-# get rid of the shared storage, only introduces bugs
-class SharedStorage(bpy.types.PropertyGroup):
-    camera_names: bpy.props.CollectionProperty(type=StringValueItem)
 
 
 class QuiltMakerPanel(bpy.types.Panel):
@@ -69,9 +91,15 @@ class QuiltMakerPanel(bpy.types.Panel):
         layout = self.layout
         cus_pt = context.scene.custom_props
 
-        layout.label(text="Spawn Camera Array:")
+        layout.label(text="Spawn Camera Array:", icon="OUTLINER_COLLECTION")
 
-        layout.prop(cus_pt, "qm_camera_count")
+        layout.label(text="Views Grid Dimensions:")
+        layout.prop(cus_pt, "qm_x_views")
+        layout.prop(cus_pt, "qm_y_views")
+
+        cam_count = cus_pt.qm_x_views * cus_pt.qm_y_views
+        layout.label(text=f"Camera Count: {cam_count}")
+
         layout.prop(cus_pt, "qm_focus_distance")
         layout.prop(cus_pt, "qm_focus_object")
 
@@ -79,13 +107,21 @@ class QuiltMakerPanel(bpy.types.Panel):
 
         layout.separator()
 
-        layout.label(text="Render Quilt:")
+        layout.label(text="Render Quilt:", icon="OUTLINER_COLLECTION")
         layout.prop(cus_pt, "qm_quilt_render_target_directory")
+        layout.label(text="Resolution of One View:")
+        layout.prop(cus_pt, "qm_view_x_resolution")
+        layout.prop(cus_pt, "qm_view_y_resolution")
         layout.operator("qm.render_quilt")
+
+        quilt_x = cus_pt.qm_x_views * cus_pt.qm_view_x_resolution
+        quilt_y = cus_pt.qm_y_views * cus_pt.qm_view_y_resolution
+
+        layout.label(text=f"Quilt Resolution: {quilt_x} x {quilt_y}")
 
         layout.separator()
 
-        layout.label(text="Render Display Image:")
+        layout.label(text="Render Display Image:", icon="OUTLINER_COLLECTION")
 
         layout.prop(cus_pt, "qm_pitch")
         layout.prop(cus_pt, "qm_tilt")
@@ -95,8 +131,6 @@ class QuiltMakerPanel(bpy.types.Panel):
 
 all_classes = [
     CustomProps,
-    StringValueItem,
-    SharedStorage,
     QuiltMakerPanel,
     CamerasSpawner,
     QuiltRenderer,

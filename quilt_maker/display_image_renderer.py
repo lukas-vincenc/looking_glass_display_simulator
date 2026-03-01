@@ -136,66 +136,48 @@ class DisplayImageRenderer(bpy.types.Operator):
         out_h = tile_h
 
         total_views = len(tiles)
-        out_buf = [0.0] * (out_w * out_h * 4)
 
         tilt_factor = self.tilt / 100
         pitch = self.pitch
         center = self.center
         cs = self.color_shift
 
-        for y in range(out_h):
-            sy = y / out_h
-            row_offset = y * tile_w * 4
+        # Convert tiles to numpy: shape = (views, H*W*4)
+        tiles_np = np.asarray(tiles, dtype=np.float32)
 
-            for x in range(out_w):
-                sx = 1 - (x / out_w)
+        # Create coordinate grids
+        y = np.arange(out_h, dtype=np.float32)
+        x = np.arange(out_w, dtype=np.float32)
 
-                view_pick = (sx + cs + sy * tilt_factor) * pitch - center
-                view_pick = view_pick - math.floor(view_pick)
+        sy = (y[:, None] / out_h)
+        sx = 1.0 - (x[None, :] / out_w)
 
-                view = int(view_pick * (total_views - 1))
+        # Compute view_pick
+        view_pick = (sx + cs + sy * tilt_factor) * pitch - center
+        view_pick = view_pick - np.floor(view_pick)
 
-                src_i = row_offset + x * 4
-                r = tiles[view][src_i]
-                g = tiles[view][src_i + 1]
-                b = tiles[view][src_i + 2]
+        # View index
+        view = (view_pick * (total_views - 1)).astype(np.int32)  # shape (H,W)
 
-                out_i = (y * out_w + x) * 4
-                out_buf[out_i:out_i + 4] = (r, g, b, 1.0)
+        # Pixel indices inside flat tile buffer
+        idx = (np.arange(out_h)[:, None] * tile_w + np.arange(out_w)[None, :]) * 4
+        idx = idx.astype(np.int32)  # shape (H,W)
 
-        return out_buf
+        # Gather RGB
 
-    def build_display_image_numpy(self, tiles_list):
-        # tiles_list is a list of flat pixel arrays
-        tile_w, tile_h = self.tile_width, self.tile_height
-        num_views = len(tiles_list)
+        r = tiles_np[view, idx]
+        g = tiles_np[view, idx + 1]
+        b = tiles_np[view, idx + 2]
 
-        # 1. Convert tiles to a single 3D numpy array: (View, PixelIndex, RGBA)
-        # This takes some memory, but is much faster for lookup
-        all_views = np.array(tiles_list, dtype=np.float32)
+        # Build output buffer
+        out = np.empty((out_h, out_w, 4), dtype=np.float32)
+        out[..., 0] = r
+        out[..., 1] = g
+        out[..., 2] = b
+        out[..., 3] = 1.0  # alpha
 
-        # 2. Create a grid of coordinates
-        y_coords, x_coords = np.mgrid[0:tile_h, 0:tile_w]
-
-        # Normalize coordinates
-        sx = x_coords / tile_w
-        sy = y_coords / tile_h
-
-        # 3. Vectorized math (The view_pick formula)
-        tilt_factor = self.tilt / 100
-        view_indices = (sx + self.color_shift + sy * tilt_factor) * self.pitch - self.center
-        view_indices = (view_indices - np.floor(view_indices)) * (num_views - 1)
-        view_indices = view_indices.astype(np.int32)
-
-        # 4. Advanced Indexing
-        # We need to map (y, x) to the correct view and the correct pixel index
-        pixel_indices = (y_coords * tile_w + x_coords)
-
-        # This extracts the correct R, G, B, A for every pixel at once
-        # Result shape: (tile_h, tile_w, 4)
-        final_image = all_views[view_indices, pixel_indices]
-
-        return final_image.flatten()
+        # Return flat buffer like original
+        return out.reshape(-1).tolist()
 
     def build_file_name(self):
         now = strftime("%Y-%m-%d_%H-%M-%S", gmtime())

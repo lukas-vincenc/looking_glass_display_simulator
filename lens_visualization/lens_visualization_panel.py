@@ -41,7 +41,7 @@ class CustomProps(bpy.types.PropertyGroup):
 
 class LensVisualizationPanel(bpy.types.Panel):
     bl_label = "Lens Visualization"
-    bl_idname = "LENS VISUALIZATION_PT_lds"
+    bl_idname = "LENS_VISUALIZATION_PT_lds"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = 'LensVisualization'

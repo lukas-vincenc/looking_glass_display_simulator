@@ -29,13 +29,17 @@ class QuiltRenderer(bpy.types.Operator):
             self.report({'ERROR'}, "No quilt camera list found. Spawn cameras first.")
             return {'CANCELLED'}
 
-        cam_count = len(cameras)
+        self.grid_cols = custom_props.qm_x_views
+        self.grid_rows = custom_props.qm_y_views
 
-        self.grid_cols = math.ceil(math.sqrt(cam_count))
-        self.grid_rows = math.ceil(cam_count / self.grid_cols)
+        orig_res_x = scene.render.resolution_x
+        orig_res_y = scene.render.resolution_y
 
-        self.tile_width = scene.render.resolution_x
-        self.tile_height = scene.render.resolution_y
+        scene.render.resolution_x = custom_props.qm_view_x_resolution
+        scene.render.resolution_y = custom_props.qm_view_y_resolution
+
+        self.tile_width = custom_props.qm_view_x_resolution
+        self.tile_height = custom_props.qm_view_y_resolution
 
         # -------------------------------------------------
         # Prepare temp directory
@@ -88,6 +92,9 @@ class QuiltRenderer(bpy.types.Operator):
                 os.remove(p)
             except:
                 pass
+
+        scene.render.resolution_x = orig_res_x
+        scene.render.resolution_y = orig_res_y
 
         self.report({'INFO'}, "Quilt rendered successfully")
         return {'FINISHED'}
@@ -146,9 +153,12 @@ class QuiltRenderer(bpy.types.Operator):
             img_node.image = bpy.data.images.load(path)
             img_node.location = (0, -300 * i)
 
+            inv_col = (self.grid_cols - 1) - col
+            inv_row = (self.grid_rows - 1) - row
+
             trans_node = nt.nodes.new("CompositorNodeTransform")
-            trans_node.inputs['X'].default_value = ((self.grid_cols-1)/2 - col) * self.tile_width
-            trans_node.inputs['Y'].default_value = ((self.grid_rows-1)/2 - row) * self.tile_height
+            trans_node.inputs['X'].default_value = ((self.grid_cols - 1) / 2 - inv_col) * self.tile_width
+            trans_node.inputs['Y'].default_value = ((self.grid_rows - 1) / 2 - inv_row) * self.tile_height
             trans_node.inputs['Scale'].default_value = 1.0
             trans_node.location = (300, -300 * i)
 
