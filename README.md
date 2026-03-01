@@ -6,6 +6,19 @@ example.
 
 # Installation
 
+1. Download this repository as a ZIP file
+2. Open Blender
+3. `Edit` > `Preferences`
+4. Select `Add-ons` in the left sidebar
+5. In the top right corner, press the arrow icon to view a pop-up menu
+6. Press `Install from Disk...`
+7. In your installed files, find the downloaded ZIP and select it
+8. Done
+
+The extension should now be ready-to-use. New tabs should appear
+in the main window. If nothing happened, make sure the checkbox
+is checked next to the add-on name in the add-ons list.
+
 # Usage
 
 The extension introduces two tabs - `QuiltMaker` and `LentDisplay`.
