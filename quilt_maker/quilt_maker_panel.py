@@ -148,7 +148,6 @@ def register():
     for cls in all_classes:
         bpy.utils.register_class(cls)
 
-    # TODO: change to qm_custom_props
     bpy.types.Scene.qm_custom_props = bpy.props.PointerProperty(type=CustomProps)
 
 
