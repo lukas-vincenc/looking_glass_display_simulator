@@ -4,6 +4,8 @@ from .lens_math import LensParameters
 
 
 def flatten_lens_on_side(lens, side, lens_radius, lens_height):
+    # TODO: update to match technical report
+
     flatten_offset = lens_radius * 0.5
 
     bpy.ops.mesh.primitive_cube_add(
@@ -49,6 +51,8 @@ def build_lens(params: LensParameters, material):
     center = params.center
     cylinder_vertices = params.vertices
 
+    # TODO: get your shit together, tf is this math
+    # get rid of the flatten_offset, add calculation for the lens properly
     flatten_offset = lens_radius * 0.5
 
     bpy.ops.mesh.primitive_cylinder_add(

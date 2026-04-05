@@ -6,6 +6,7 @@ all_classes = [
     LensParameters
 ]
 
+# TODO: this file can probably be deleted
 
 def register():
     for cls in all_classes:

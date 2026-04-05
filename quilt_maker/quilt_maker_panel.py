@@ -12,23 +12,28 @@ def update_camera_count(self, context):
     self.qm_camera_count = self.qm_x_views * self.qm_y_views
 
 
+def update_cameras(self, context):
+    from .cameras_spawner import sync_camera_array
+    sync_camera_array(context)
+
+
 # Custom properties shown in the extension UI panel
 class CustomProps(bpy.types.PropertyGroup):
     qm_camera_count: IntProperty(
         name="Camera Count",
-        default=48,
-        min=1,
-        max=200
+        default=48, min=1, max=200,
+        update=update_cameras
     )
-    qm_focus_distance: FloatProperty(
-        name="Focus Distance",
-        default=30.0,
-        min=0.1,
-        max=1000.0
+    qm_spacing: FloatProperty(
+        name="Spacing",
+        default=1.0, min=0.01, max=10.0,
+        update=update_cameras
     )
-    qm_focus_object: PointerProperty(
-        name="Focus",
-        type=bpy.types.Object
+    qm_focus_camera: PointerProperty(
+        name="Source Camera",
+        type=bpy.types.Object,
+        poll=lambda self, obj: obj.type == 'CAMERA',
+        update=update_cameras
     )
     qm_quilt_render_target_directory: StringProperty(
         name="Directory",
@@ -62,14 +67,14 @@ class CustomProps(bpy.types.PropertyGroup):
         default=8,
         min=1,
         max=100,
-        update=update_camera_count
+        update=update_cameras
     )
     qm_y_views: IntProperty(
         name="Y",
         default=6,
         min=1,
         max=100,
-        update=update_camera_count
+        update=update_cameras
     )
     qm_view_x_resolution: IntProperty(
         name="X",
@@ -105,8 +110,8 @@ class QuiltMakerPanel(bpy.types.Panel):
         cam_count = cus_pt.qm_x_views * cus_pt.qm_y_views
         layout.label(text=f"Camera Count: {cam_count}")
 
-        layout.prop(cus_pt, "qm_focus_distance")
-        layout.prop(cus_pt, "qm_focus_object")
+        layout.prop(cus_pt, "qm_focus_camera")
+        layout.prop(cus_pt, "qm_spacing")
 
         layout.operator("qm.cameras_spawner")
 

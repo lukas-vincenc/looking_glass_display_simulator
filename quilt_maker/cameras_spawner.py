@@ -1,51 +1,49 @@
-import math
-
 import bpy
-import mathutils
+
+QUILT_CAM_TAG = "QM_Child"
 
 
-QUILT_CAMERA_OBJ_NAME = "QuiltCamera"
+def sync_camera_array(context):
+    props = context.scene.qm_custom_props
+    source_cam = props.qm_focus_camera
+
+    if not source_cam or source_cam.type != 'CAMERA':
+        return
+
+    count = props.qm_x_views * props.qm_y_views
+    spacing = props.qm_spacing
+
+    to_remove = [obj for obj in bpy.data.objects if QUILT_CAM_TAG in obj]
+    for obj in to_remove:
+        bpy.data.objects.remove(obj, do_unlink=True)
+
+    middle = (count - 1) / 2.0
+
+    # TODO: fix focal length
+    focal_len = source_cam.data.lens
+
+    for i in range(count):
+
+        offset_x = (i - middle) * spacing
+
+        new_cam_data = source_cam.data.copy()
+        new_cam_obj = bpy.data.objects.new(f"QuiltCam_{i:03d}", new_cam_data)
+        context.collection.objects.link(new_cam_obj)
+
+        new_cam_obj[QUILT_CAM_TAG] = True
+
+        new_cam_obj.parent = source_cam
+
+        new_cam_obj.location = (offset_x, 0, 0)
+        new_cam_obj.rotation_euler = (0, 0, 0)
+
+        new_cam_obj.data.shift_x = -offset_x / focal_len
 
 
 class CamerasSpawner(bpy.types.Operator):
     bl_idname = "qm.cameras_spawner"
-    bl_label = "Spawn Cameras"
-    bl_description = "Spawns cameras in a line all pointing at a focus point"
+    bl_label = "Force Sync Cameras"
 
     def execute(self, context):
-        scene = context.scene
-        custom_props = scene.qm_custom_props
-
-        focus_object = custom_props.qm_focus_object
-        focus_distance = custom_props.qm_focus_distance
-        camera_count = custom_props.qm_camera_count
-
-        if not focus_object:
-            self.report({'ERROR'}, "Please select a focus object")
-            return {'CANCELLED'}
-
-        # remove old cameras
-        for obj in bpy.data.objects:
-            if obj.name.startswith(QUILT_CAMERA_OBJ_NAME):
-                bpy.data.objects.remove(obj, do_unlink=True)
-
-        rotation = (math.radians(90), 0, 0)
-        middle = math.floor(camera_count / 2)
-
-        for i in range(camera_count):
-            x_axis = (i - middle)
-
-            location = mathutils.Vector((x_axis, -focus_distance, 0.0))
-            bpy.ops.object.camera_add(location=location, rotation=rotation)
-            camera = bpy.context.active_object
-
-            cam_name = f"{QUILT_CAMERA_OBJ_NAME}_{i:03d}"
-            camera.name = cam_name
-            camera.parent = focus_object
-
-            camera.data.lens_unit = 'FOV'
-            camera.data.angle = math.radians(90)
-            camera.data.shift_x = -x_axis / float(focus_distance * 2)
-
-        self.report({'INFO'}, "Spawning cameras complete")
+        sync_camera_array(context)
         return {'FINISHED'}
