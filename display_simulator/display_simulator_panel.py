@@ -24,6 +24,28 @@ def recalc_lens_geometry(obj, custom_props, display_width):
         center=center,
     )
 
+    gn_mod = obj.modifiers.get("LDS_GeometryNodes")
+    if not gn_mod or not gn_mod.node_group:
+        return
+
+    pitch_identifier = None
+    for item in gn_mod.node_group.interface.items_tree:
+        if item.name == "Pitch" and item.in_out == 'INPUT':
+            pitch_identifier = item.identifier
+            break
+
+    if pitch_identifier:
+        gn_mod[pitch_identifier] = custom_props.lds_pitch
+
+    extra_lenses_identifier = None
+    for item in gn_mod.node_group.interface.items_tree:
+        if item.name == "Extra Lenses" and item.in_out == 'INPUT':
+            extra_lenses_identifier = item.identifier
+            break
+
+    if extra_lenses_identifier:
+        gn_mod[extra_lenses_identifier] = params.missing_lenses
+
     lens_radius = params.radius
     lens_width = lens_radius * (4 / 3)
 
@@ -56,33 +78,10 @@ def update_lens_tilt(self, context):
     recalc_lens_geometry(obj, context.scene.lds_custom_props, DisplaySpawner.DISPLAY_WIDTH)
 
 
-def update_lens_pitch(self, context):
-    obj = bpy.data.objects.get("Lens")
-    if obj is None:
-        return
-
-    arr_mod = obj.modifiers.get("Lens_Array")
-    arr_mod.count = self.lds_pitch
-    recalc_lens_geometry(obj, context.scene.lds_custom_props, DisplaySpawner.DISPLAY_WIDTH)
-
-
 def update_gn_pitch(self, context):
     obj = bpy.data.objects.get("Lens")
     if obj is None:
         return
-
-    gn_mod = obj.modifiers.get("LDS_GeometryNodes")
-    if not gn_mod or not gn_mod.node_group:
-        return
-
-    pitch_identifier = None
-    for item in gn_mod.node_group.interface.items_tree:
-        if item.name == "Pitch" and item.in_out == 'INPUT':
-            pitch_identifier = item.identifier
-            break
-
-    if pitch_identifier:
-        gn_mod[pitch_identifier] = self.lds_pitch
 
     recalc_lens_geometry(obj, context.scene.lds_custom_props, DisplaySpawner.DISPLAY_WIDTH)
 

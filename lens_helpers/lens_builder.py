@@ -70,7 +70,7 @@ def build_lens(params: LensParameters, material):
     cube.name = "Flatten"
 
     cube.scale.x = lens_radius * 2
-    cube.scale.y = lens_radius + 0.6 * lens_radius
+    cube.scale.y = lens_radius * 1.6
     cube.scale.z = lens_height
 
     bool_mod = lens.modifiers.new(name="FlatSide", type='BOOLEAN')
