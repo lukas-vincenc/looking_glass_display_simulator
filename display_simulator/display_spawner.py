@@ -1,5 +1,6 @@
 import bpy
 
+from .lens_geometry_nodes import get_node_tree
 from ..lens_helpers.materials import get_lens_material
 from ..lens_helpers.lens_builder import build_lens
 from ..lens_helpers.lens_math import calculate_lens_parameters
@@ -43,10 +44,27 @@ class DisplaySpawner(bpy.types.Operator):
 
         lens = build_lens(params, material)
 
-        # create array
-        array_mod = lens.modifiers.new(name="Lens_Array", type='ARRAY')
-        array_mod.fit_type = 'FIXED_COUNT'
-        array_mod.count = pitch
-        array_mod.relative_offset_displace[0] = 1.0001
+        gn_tree = get_node_tree()
+
+        gn_mod = lens.modifiers.new(name="LDS_GeometryNodes", type='NODES')
+        gn_mod.node_group = gn_tree
+
+        pitch_identifier = None
+        for item in gn_mod.node_group.interface.items_tree:
+            if item.name == "Pitch" and item.in_out == 'INPUT':
+                pitch_identifier = item.identifier
+                break
+
+        if pitch_identifier:
+            gn_mod[pitch_identifier] = pitch
+
+        extra_lenses_identifier = None
+        for item in gn_mod.node_group.interface.items_tree:
+            if item.name == "Extra Lenses" and item.in_out == 'INPUT':
+                extra_lenses_identifier = item.identifier
+                break
+
+        if extra_lenses_identifier:
+            gn_mod[extra_lenses_identifier] = params.missing_lenses
 
         return {'FINISHED'}

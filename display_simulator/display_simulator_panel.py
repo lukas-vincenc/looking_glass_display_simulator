@@ -3,6 +3,7 @@ import math
 import bpy
 from bpy.props import IntProperty, FloatProperty, StringProperty
 
+from ..lens_helpers.lens_math import calculate_lens_parameters
 from .display_spawner import DisplaySpawner
 
 
@@ -12,24 +13,29 @@ def recalc_lens_geometry(obj, custom_props, display_width):
 
     base_x, base_y, base_z = obj["_base_size"]
 
-    lens_tilt = custom_props.lds_tilt
     center = custom_props.lds_center
 
-    tilted_display_width = display_width * math.cos(abs(lens_tilt))
-    lens_height = (display_width * math.sin(abs(lens_tilt))
-                   + (custom_props.lds_height / custom_props.lds_width) * math.cos(abs(lens_tilt)))
+    params = calculate_lens_parameters(
+        display_width=display_width,
+        pitch=custom_props.lds_pitch,
+        height=custom_props.lds_height,
+        width=custom_props.lds_width,
+        tilt=custom_props.lds_tilt,
+        center=center,
+    )
 
-    lens_radius = (tilted_display_width / custom_props.lds_pitch / 2) * (4 / 3)
+    lens_radius = params.radius
+    lens_width = lens_radius * (4 / 3)
 
     # Reset mesh
     obj.data = obj["_base_mesh"].copy()
 
-    obj.location.x = center * lens_radius * 2 * (3 / 4)
+    obj.location.x = center * lens_width
 
     # Target dimensions
-    target_x = lens_radius * 2 * (3 / 4)
-    target_y = lens_radius * 2 * (3 / 4) + lens_radius
-    target_z = lens_height
+    target_x = lens_width
+    target_y = lens_radius * (2 + (3 / 5))
+    target_z = params.height
 
     sx = target_x / base_x
     sy = target_y / base_y
@@ -57,6 +63,27 @@ def update_lens_pitch(self, context):
 
     arr_mod = obj.modifiers.get("Lens_Array")
     arr_mod.count = self.lds_pitch
+    recalc_lens_geometry(obj, context.scene.lds_custom_props, DisplaySpawner.DISPLAY_WIDTH)
+
+
+def update_gn_pitch(self, context):
+    obj = bpy.data.objects.get("Lens")
+    if obj is None:
+        return
+
+    gn_mod = obj.modifiers.get("LDS_GeometryNodes")
+    if not gn_mod or not gn_mod.node_group:
+        return
+
+    pitch_identifier = None
+    for item in gn_mod.node_group.interface.items_tree:
+        if item.name == "Pitch" and item.in_out == 'INPUT':
+            pitch_identifier = item.identifier
+            break
+
+    if pitch_identifier:
+        gn_mod[pitch_identifier] = self.lds_pitch
+
     recalc_lens_geometry(obj, context.scene.lds_custom_props, DisplaySpawner.DISPLAY_WIDTH)
 
 
@@ -156,7 +183,7 @@ class CustomProps(bpy.types.PropertyGroup):
         default=355,
         min=1,
         max=1000,
-        update=update_lens_pitch
+        update=update_gn_pitch
     )
     lds_tilt: FloatProperty(
         name="Tilt",

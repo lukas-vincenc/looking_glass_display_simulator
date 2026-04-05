@@ -49,7 +49,7 @@ def build_lens(params: LensParameters, material):
     center = params.center
     cylinder_vertices = params.vertices
 
-    flatten_offset = lens_radius * 0.5
+    flatten_offset = lens_radius * 0.8
 
     bpy.ops.mesh.primitive_cylinder_add(
         vertices=cylinder_vertices,
@@ -63,7 +63,7 @@ def build_lens(params: LensParameters, material):
 
     bpy.ops.mesh.primitive_cube_add(
         size=1,
-        location=(0, flatten_offset + 0.3 * lens_radius, 0)
+        location=(0, flatten_offset, 0)
     )
 
     cube = bpy.context.object
