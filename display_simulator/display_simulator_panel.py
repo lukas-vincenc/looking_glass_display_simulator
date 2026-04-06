@@ -7,7 +7,14 @@ from ..lens_helpers.lens_math import calculate_lens_parameters
 from .display_spawner import DisplaySpawner
 
 
-def recalc_lens_geometry(obj, custom_props, display_width):
+def recalc_lens_geometry(self, context):
+    obj = bpy.data.objects.get("Lens")
+    if obj is None:
+        return
+
+    custom_props = context.scene.lds_custom_props
+    display_width = DisplaySpawner.DISPLAY_WIDTH
+
     if "_base_mesh" not in obj or "_base_size" not in obj:
         return
 
@@ -52,11 +59,18 @@ def recalc_lens_geometry(obj, custom_props, display_width):
     # Reset mesh
     obj.data = obj["_base_mesh"].copy()
 
-    obj.location.x = center * lens_width
+    is_tilt_negative = params.tilt < 0
+
+    rotation_compensation = display_width if is_tilt_negative else 0
+    obj.location.x = rotation_compensation + center * lens_width
+    obj.rotation_euler.y = abs(params.tilt)
+
+    tilt_multiplier = -1 if is_tilt_negative else 1
+    obj.rotation_euler.z = math.pi if is_tilt_negative else 0
 
     # Target dimensions
     target_x = lens_width
-    target_y = lens_radius * (2 + (3 / 5))
+    target_y = lens_radius * (2 + (3 / 5)) * tilt_multiplier
     target_z = params.height
 
     sx = target_x / base_x
@@ -67,39 +81,6 @@ def recalc_lens_geometry(obj, custom_props, display_width):
         v.co.x *= sx
         v.co.y *= sy
         v.co.z *= sz
-
-
-def update_lens_tilt(self, context):
-    obj = bpy.data.objects.get("Lens")
-    if obj is None:
-        return
-
-    obj.rotation_euler.y = self.lds_tilt
-    recalc_lens_geometry(obj, context.scene.lds_custom_props, DisplaySpawner.DISPLAY_WIDTH)
-
-
-def update_gn_pitch(self, context):
-    obj = bpy.data.objects.get("Lens")
-    if obj is None:
-        return
-
-    recalc_lens_geometry(obj, context.scene.lds_custom_props, DisplaySpawner.DISPLAY_WIDTH)
-
-
-def update_lens_center(self, context):
-    obj = bpy.data.objects.get("Lens")
-    if obj is None:
-        return
-
-    recalc_lens_geometry(obj, context.scene.lds_custom_props, DisplaySpawner.DISPLAY_WIDTH)
-
-
-def update_aspect_ratio(self, context):
-    obj = bpy.data.objects.get("Lens")
-    if obj is None:
-        return
-
-    recalc_lens_geometry(obj, context.scene.lds_custom_props, DisplaySpawner.DISPLAY_WIDTH)
 
 
 def update_image_plane(self, context):
@@ -182,7 +163,7 @@ class CustomProps(bpy.types.PropertyGroup):
         default=355,
         min=1,
         max=1000,
-        update=update_gn_pitch
+        update=recalc_lens_geometry
     )
     lds_tilt: FloatProperty(
         name="Tilt",
@@ -192,20 +173,20 @@ class CustomProps(bpy.types.PropertyGroup):
         subtype='ANGLE',
         unit='ROTATION',
         precision=5,
-        update=update_lens_tilt
+        update=recalc_lens_geometry
     )
     lds_center: FloatProperty(
         name="Center",
         default=0,
         min=-1,
         max=1,
-        update=update_lens_center
+        update=recalc_lens_geometry
     )
     lds_image_path: StringProperty(
         name="Image",
         description="Select image to spawn as plane",
         subtype='FILE_PATH',
-        update=update_image_plane
+        update=recalc_lens_geometry
     )
     lds_width: FloatProperty(
         name="Width",
@@ -213,7 +194,7 @@ class CustomProps(bpy.types.PropertyGroup):
         min=1,
         max=1000,
         precision=2,
-        update=update_aspect_ratio
+        update=recalc_lens_geometry
     )
     lds_height: FloatProperty(
         name="Height",
@@ -221,7 +202,7 @@ class CustomProps(bpy.types.PropertyGroup):
         min=1,
         max=1000,
         precision=2,
-        update=update_aspect_ratio
+        update=recalc_lens_geometry
     )
 
 

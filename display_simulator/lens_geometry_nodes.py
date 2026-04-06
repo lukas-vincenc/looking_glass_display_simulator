@@ -1,12 +1,9 @@
 import bpy
-import mathutils
-import os
 import typing
 
 
-def geometry_nodes_1_node_group(node_tree_names: dict[typing.Callable, str]):
-    """Initialize Geometry Nodes node group"""
-    geometry_nodes_1 = bpy.data.node_groups.new(type='GeometryNodeTree', name="Geometry Nodes")
+def get_node_tree():
+    geometry_nodes_1 = bpy.data.node_groups.new(type='GeometryNodeTree', name="Geometry Nodes.004")
 
     geometry_nodes_1.color_tag = 'NONE'
     geometry_nodes_1.description = ""
@@ -155,6 +152,12 @@ def geometry_nodes_1_node_group(node_tree_names: dict[typing.Callable, str]):
     group_input_003 = geometry_nodes_1.nodes.new("NodeGroupInput")
     group_input_003.name = "Group Input.003"
 
+    # Node Math
+    math = geometry_nodes_1.nodes.new("ShaderNodeMath")
+    math.name = "Math"
+    math.operation = 'ABSOLUTE'
+    math.use_clamp = False
+
     # Set locations
     geometry_nodes_1.nodes["Group Input"].location = (-786.2814331054688, 127.74369812011719)
     geometry_nodes_1.nodes["Group Output"].location = (1113.94580078125, -47.02090835571289)
@@ -165,13 +168,14 @@ def geometry_nodes_1_node_group(node_tree_names: dict[typing.Callable, str]):
     geometry_nodes_1.nodes["Separate XYZ"].location = (-263.810546875, 221.37921142578125)
     geometry_nodes_1.nodes["Combine XYZ"].location = (-99.90115356445312, 222.16078186035156)
     geometry_nodes_1.nodes["Vector Math.001"].location = (68.47270202636719, 218.3512420654297)
-    geometry_nodes_1.nodes["Instance on Points.001"].location = (729.196533203125, -217.82664489746094)
+    geometry_nodes_1.nodes["Instance on Points.001"].location = (669.3336181640625, -270.4549255371094)
     geometry_nodes_1.nodes["Mesh Line.001"].location = (410.3204040527344, -234.2307586669922)
     geometry_nodes_1.nodes["Vector Math.002"].location = (240.48643493652344, -37.24143981933594)
     geometry_nodes_1.nodes["Join Geometry"].location = (943.202392578125, -48.090126037597656)
     geometry_nodes_1.nodes["Group Input.001"].location = (496.35443115234375, 137.89129638671875)
-    geometry_nodes_1.nodes["Group Input.002"].location = (189.4912109375, -379.1995849609375)
+    geometry_nodes_1.nodes["Group Input.002"].location = (-63.10108947753906, -446.4671936035156)
     geometry_nodes_1.nodes["Group Input.003"].location = (-128.2467041015625, 425.9239807128906)
+    geometry_nodes_1.nodes["Math"].location = (164.2056884765625, -288.0757751464844)
 
     # Set dimensions
     geometry_nodes_1.nodes["Group Input"].width  = 140.0
@@ -221,6 +225,9 @@ def geometry_nodes_1_node_group(node_tree_names: dict[typing.Callable, str]):
 
     geometry_nodes_1.nodes["Group Input.003"].width  = 140.0
     geometry_nodes_1.nodes["Group Input.003"].height = 100.0
+
+    geometry_nodes_1.nodes["Math"].width  = 140.0
+    geometry_nodes_1.nodes["Math"].height = 100.0
 
 
     # Initialize geometry_nodes_1 links
@@ -310,10 +317,15 @@ def geometry_nodes_1_node_group(node_tree_names: dict[typing.Callable, str]):
         geometry_nodes_1.nodes["Group Input.003"].outputs[1],
         geometry_nodes_1.nodes["Mesh Line"].inputs[0]
     )
-    # group_input_002.Extra Lenses -> mesh_line_001.Count
+    # math.Value -> mesh_line_001.Count
+    geometry_nodes_1.links.new(
+        geometry_nodes_1.nodes["Math"].outputs[0],
+        geometry_nodes_1.nodes["Mesh Line.001"].inputs[0]
+    )
+    # group_input_002.Extra Lenses -> math.Value
     geometry_nodes_1.links.new(
         geometry_nodes_1.nodes["Group Input.002"].outputs[2],
-        geometry_nodes_1.nodes["Mesh Line.001"].inputs[0]
+        geometry_nodes_1.nodes["Math"].inputs[0]
     )
     # instance_on_points_001.Instances -> join_geometry.Geometry
     geometry_nodes_1.links.new(
@@ -322,15 +334,3 @@ def geometry_nodes_1_node_group(node_tree_names: dict[typing.Callable, str]):
     )
 
     return geometry_nodes_1
-
-
-def get_node_tree():
-    # Maps node tree creation functions to the node tree
-    # name, such that we don't recreate node trees unnecessarily
-    node_tree_names : dict[typing.Callable, str] = {}
-
-    geometry_nodes = geometry_nodes_1_node_group(node_tree_names)
-    node_tree_names[geometry_nodes_1_node_group] = geometry_nodes.name
-
-    return geometry_nodes
-

@@ -87,7 +87,7 @@ def build_lens(params: LensParameters, material):
     flatten_lens_on_side(lens, -1, lens_radius, lens_height)
     flatten_lens_on_side(lens, 1, lens_radius, lens_height)
 
-    lens.rotation_euler.y = lens_tilt
+    lens.rotation_euler.y = abs(lens_tilt)
 
     if len(lens.data.materials) == 0:
         lens.data.materials.append(material)
