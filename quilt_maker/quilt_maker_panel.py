@@ -5,6 +5,7 @@ from bpy.props import (StringProperty, IntProperty, FloatProperty, PointerProper
 
 from .cameras_spawner import CamerasSpawner
 from .display_image_renderer import DisplayImageRenderer
+from .primary_camera_selector import PrimaryCameraSelector
 from .quilt_renderer import QuiltRenderer
 
 
@@ -15,6 +16,17 @@ def update_camera_count(self, context):
 def update_cameras(self, context):
     from .cameras_spawner import sync_camera_array
     sync_camera_array(context)
+
+
+def update_preview_camera(self, context):
+    cam_name = f"QuiltCam_{self.qm_preview_index:03d}"
+    cam_obj = bpy.data.objects.get(cam_name)
+
+    if cam_obj:
+        context.scene.camera = cam_obj
+        for area in context.screen.areas:
+            if area.type == 'VIEW_3D':
+                area.spaces.active.region_3d.view_perspective = 'CAMERA'
 
 
 # Custom properties shown in the extension UI panel
@@ -30,9 +42,14 @@ class CustomProps(bpy.types.PropertyGroup):
         update=update_cameras
     )
     qm_focus_camera: PointerProperty(
-        name="Source Camera",
+        name="Primary Camera",
         type=bpy.types.Object,
         poll=lambda self, obj: obj.type == 'CAMERA',
+        update=update_cameras
+    )
+    qm_focus_object: PointerProperty(
+        name="Focus Object",
+        type=bpy.types.Object,
         update=update_cameras
     )
     qm_quilt_render_target_directory: StringProperty(
@@ -88,6 +105,13 @@ class CustomProps(bpy.types.PropertyGroup):
         min=1,
         max=10000
     )
+    qm_preview_index: IntProperty(
+        name="Preview Index",
+        description="Select which camera to view the scene from",
+        default=0,
+        min=0,
+        update=update_preview_camera
+    )
 
 
 class QuiltMakerPanel(bpy.types.Panel):
@@ -110,10 +134,22 @@ class QuiltMakerPanel(bpy.types.Panel):
         cam_count = cus_pt.qm_x_views * cus_pt.qm_y_views
         layout.label(text=f"Camera Count: {cam_count}")
 
-        layout.prop(cus_pt, "qm_focus_camera")
+        row = layout.row(align=True)
+        row.prop(cus_pt, "qm_focus_camera")
+        row.operator("qm.view_primary_camera", text="", icon='HIDE_OFF')
+
+        layout.prop(cus_pt, "qm_focus_object")
         layout.prop(cus_pt, "qm_spacing")
 
         layout.operator("qm.cameras_spawner")
+
+        # Add the Preview Field here
+        col = layout.column(align=True)
+        col.label(text="Camera Preview Control:", icon='VIEW_CAMERA')
+
+        # Clamp the max index dynamically so the user can't select a non-existent camera
+        row = col.row(align=True)
+        row.prop(cus_pt, "qm_preview_index", text="View Index")
 
         layout.separator()
 
@@ -145,7 +181,8 @@ all_classes = [
     QuiltMakerPanel,
     CamerasSpawner,
     QuiltRenderer,
-    DisplayImageRenderer
+    DisplayImageRenderer,
+    PrimaryCameraSelector
 ]
 
 
