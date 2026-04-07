@@ -25,6 +25,7 @@ class DisplaySpawner(bpy.types.Operator):
         pitch = custom_props.lds_pitch
         height = custom_props.lds_height
         width = custom_props.lds_width
+        depth = custom_props.lds_depth
 
         # remove old lenses
         for obj in bpy.data.objects:
@@ -36,6 +37,7 @@ class DisplaySpawner(bpy.types.Operator):
             pitch=pitch,
             height=height,
             width=width,
+            depth=depth,
             tilt=lens_tilt,
             center=center
         )

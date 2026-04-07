@@ -1,186 +1,182 @@
-import bpy
 import math
+import bpy
 import os
+import numpy as np
+from time import gmtime, strftime
 
 
 class QuiltRenderer(bpy.types.Operator):
     bl_idname = "qm.render_quilt"
     bl_label = "Render Quilt"
-    bl_description = "Render a quilt from the generated cameras using compositor"
+    bl_description = "Render a grid-based quilt (Modal - No UI Freeze)"
 
-    tile_width = None
-    tile_height = None
+    _timer = None
+    _cameras = []
+    _tile_paths = []
+    _current_index = 0
+    _temp_dir = ""
+    _target_dir = ""
 
-    grid_cols = None
-    grid_rows = None
+    # Store original settings to restore later
+    _orig_res_x = 0
+    _orig_res_y = 0
+
+    def modal(self, context, event):
+        if event.type == 'ESC':
+            self.cleanup(context)
+            self.report({'INFO'}, "Quilt Render Cancelled")
+            return {'CANCELLED'}
+
+        if event.type == 'TIMER':
+            # Phase 1: Render Individual Tiles
+            if self._current_index < len(self._cameras):
+                progress = (self._current_index / len(self._cameras)) * 100
+                context.workspace.status_text_set(
+                    f"Quilt Maker: Rendering Tile {self._current_index + 1}/{len(self._cameras)} ({int(progress)}%) - ESC to Cancel"
+                )
+
+                # Force UI Refresh
+                for area in context.screen.areas:
+                    area.tag_redraw()
+
+                cam = self._cameras[self._current_index]
+                self.render_single_tile(context.scene, cam, self._current_index)
+
+                self._current_index += 1
+                return {'RUNNING_MODAL'}
+
+            # Phase 2: Stitch Tiles into Quilt
+            else:
+                context.workspace.status_text_set("Quilt Maker: Stitching Quilt Grid...")
+                self.process_quilt(context)
+                self.cleanup(context)
+                return {'FINISHED'}
+
+        return {'PASS_THROUGH'}
 
     def execute(self, context):
         scene = context.scene
-        custom_props = scene.qm_custom_props
+        props = scene.qm_custom_props
+        self._target_dir = bpy.path.abspath(props.qm_quilt_render_target_directory)
 
-        target_directory = custom_props.qm_quilt_render_target_directory
-
-        if not target_directory:
-            self.report({'ERROR'}, "Please select a target directory")
+        if not self._target_dir or not os.path.exists(self._target_dir):
+            self.report({'ERROR'}, "Invalid Target Directory")
             return {'CANCELLED'}
 
-        cameras = self.collect_sorted_cameras()
-        if not cameras:
-            self.report({'ERROR'}, "No quilt camera list found. Spawn cameras first.")
+        self._cameras = [obj for obj in bpy.data.objects if obj.name.startswith("QuiltCam")]
+        self._cameras.sort(key=lambda cam: int(cam.name.split("_")[-1]))
+
+        if not self._cameras:
+            self.report({'ERROR'}, "No quilt cameras found. Spawn array first.")
             return {'CANCELLED'}
 
-        self.grid_cols = custom_props.qm_x_views
-        self.grid_rows = custom_props.qm_y_views
+        # Store and set resolution
+        self._orig_res_x = scene.render.resolution_x
+        self._orig_res_y = scene.render.resolution_y
+        scene.render.resolution_x = props.qm_view_x_resolution
+        scene.render.resolution_y = props.qm_view_y_resolution
 
-        orig_res_x = scene.render.resolution_x
-        orig_res_y = scene.render.resolution_y
+        # Setup Temp Dir
+        self._temp_dir = os.path.join(self._target_dir, "quilt_temp")
+        os.makedirs(self._temp_dir, exist_ok=True)
 
-        scene.render.resolution_x = custom_props.qm_view_x_resolution
-        scene.render.resolution_y = custom_props.qm_view_y_resolution
+        self._tile_paths = []
+        self._current_index = 0
 
-        self.tile_width = custom_props.qm_view_x_resolution
-        self.tile_height = custom_props.qm_view_y_resolution
+        # Start Modal
+        wm = context.window_manager
+        self._timer = wm.event_timer_add(0.1, window=context.window)
+        wm.modal_handler_add(self)
 
-        # -------------------------------------------------
-        # Prepare temp directory
-        # -------------------------------------------------
-        temp_dir = os.path.join(target_directory, "quilt_temp")
-        os.makedirs(temp_dir, exist_ok=True)
+        return {'RUNNING_MODAL'}
 
-        # -------------------------------------------------
-        # Render tiles
-        # -------------------------------------------------
-        orig_camera = scene.camera
-        orig_filepath = scene.render.filepath
-        bpy.context.scene.use_nodes = False
+    def render_single_tile(self, scene, cam, idx):
+        scene.camera = cam
+        out_path = os.path.join(self._temp_dir, f"tile_{idx:03d}.png")
+        scene.render.filepath = out_path
+        bpy.ops.render.render(write_still=True)
+        self._tile_paths.append(out_path)
 
-        tile_paths = []
+    def process_quilt(self, context):
+        props = context.scene.qm_custom_props
+        cols = props.qm_x_views
+        rows = props.qm_y_views
+        tw = props.qm_view_x_resolution
+        th = props.qm_view_y_resolution
 
-        for idx, cam in enumerate(cameras):
-            scene.camera = cam
-            out_path = os.path.join(temp_dir, f"tile_{idx:03d}.png")
-            out_path = os.path.normpath(os.path.abspath(out_path))
-            scene.render.filepath = out_path
-            scene.render.image_settings.file_format = 'PNG'
-            scene.render.image_settings.color_mode = 'RGBA'
+        quilt_w = cols * tw
+        quilt_h = rows * th
 
-            bpy.ops.render.render(write_still=True)
-            bpy.context.view_layer.update()
+        # Pre-allocate the giant quilt array (RGBA)
+        # We use uint8 for speed/memory if possible, or float32 for high bit depth
+        quilt_data = np.zeros((quilt_h, quilt_w, 4), dtype=np.float32)
 
-            if not os.path.exists(out_path):
-                raise RuntimeError(f"Render failed: {out_path}")
+        for idx, path in enumerate(self._tile_paths):
+            col = idx % cols
+            # Calculate row from bottom-up (Blender image standard)
+            row = idx // cols
 
-            tile_paths.append(out_path)
+            # Load tile
+            img = bpy.data.images.load(path)
+            tile_pixels = np.zeros(tw * th * 4, dtype=np.float32)
+            img.pixels.foreach_get(tile_pixels)
+            tile_pixels = tile_pixels.reshape((th, tw, 4))
 
-        scene.camera = orig_camera
-        scene.render.filepath = orig_filepath
+            # Insert into quilt grid
+            y_start = row * th
+            y_end = y_start + th
+            x_start = col * tw
+            x_end = x_start + tw
 
-        # -------------------------------------------------
-        # Build compositor quilt
-        # -------------------------------------------------
-        self.build_quilt_compositor(
-            scene=scene,
-            tile_paths=tile_paths,
-            output_path=os.path.join(target_directory, "quilt.png")
-        )
+            quilt_data[y_start:y_end, x_start:x_end] = tile_pixels
 
-        # -------------------------------------------------
-        # Cleanup temp tiles
-        # -------------------------------------------------
-        for p in tile_paths:
+            bpy.data.images.remove(img)
+
+        # Create and Save Result
+        out_name = "Quilt_Result"
+        if out_name in bpy.data.images:
+            bpy.data.images.remove(bpy.data.images[out_name])
+
+        quilt_img = bpy.data.images.new(out_name, width=quilt_w, height=quilt_h)
+        quilt_img.pixels.foreach_set(quilt_data.flatten())
+
+        save_path = os.path.join(self._target_dir, "quilt.png")
+        quilt_img.filepath_raw = save_path
+        quilt_img.file_format = 'PNG'
+        quilt_img.save()
+
+        self.report({'INFO'}, f"Quilt saved to: {save_path}")
+
+    def cleanup(self, context):
+        if self._timer:
+            context.window_manager.event_timer_remove(self._timer)
+
+        # Restore resolutions
+        context.scene.render.resolution_x = self._orig_res_x
+        context.scene.render.resolution_y = self._orig_res_y
+        context.workspace.status_text_set(None)
+
+        # Delete temp files
+        for p in self._tile_paths:
+            if os.path.exists(p):
+                try:
+                    os.remove(p)
+                except:
+                    pass
+        if os.path.exists(self._temp_dir):
             try:
-                os.remove(p)
+                os.rmdir(self._temp_dir)
             except:
                 pass
 
-        scene.render.resolution_x = orig_res_x
-        scene.render.resolution_y = orig_res_y
-
-        self.report({'INFO'}, "Quilt rendered successfully")
+    def cancel(self, context):
+        self.cleanup(context)
         return {'FINISHED'}
 
-    # -------------------------------------------------
-    # Camera collection
-    # -------------------------------------------------
-    def collect_sorted_cameras(self):
-        objs = bpy.data.objects
-        cams = [obj for obj in objs if obj.name.startswith("QuiltCamera")]
-        cams.sort(key=lambda cam: int(cam.name.split("_")[-1]))
-        return cams
 
-    # -------------------------------------------------
-    # Compositor builder
-    # -------------------------------------------------
-    def build_quilt_compositor(self, scene, tile_paths, output_path):
-        scene.use_nodes = True
-        nt = scene.node_tree
-        nt.nodes.clear()
+def register():
+    bpy.utils.register_class(QuiltRenderer)
 
-        quilt_w = self.grid_cols * self.tile_width
-        quilt_h = self.grid_rows * self.tile_height
 
-        orig_resolution_x = scene.render.resolution_x
-        orig_resolution_y = scene.render.resolution_y
-
-        # resize render canvas
-        scene.render.resolution_x = quilt_w
-        scene.render.resolution_y = quilt_h
-        scene.render.resolution_percentage = 100
-
-        comp_node = nt.nodes.new("CompositorNodeComposite")
-        comp_node.location = (1200, 0)
-
-        # -------------------------------------------------
-        # FULL-SIZE TRANSPARENT CANVAS
-        # -------------------------------------------------
-        bg_img = bpy.data.images.new(
-            name="Quilt_BG",
-            width=quilt_w,
-            height=quilt_h,
-            alpha=True
-        )
-
-        bg_node = nt.nodes.new("CompositorNodeImage")
-        bg_node.image = bg_img
-        bg_node.location = (-300, 0)
-        alpha_chain = bg_node
-
-        for i, path in enumerate(tile_paths):
-            col = i % self.grid_cols
-            row = i // self.grid_cols
-
-            img_node = nt.nodes.new("CompositorNodeImage")
-            img_node.image = bpy.data.images.load(path)
-            img_node.location = (0, -300 * i)
-
-            inv_col = (self.grid_cols - 1) - col
-            inv_row = (self.grid_rows - 1) - row
-
-            trans_node = nt.nodes.new("CompositorNodeTransform")
-            trans_node.inputs['X'].default_value = ((self.grid_cols - 1) / 2 - inv_col) * self.tile_width
-            trans_node.inputs['Y'].default_value = ((self.grid_rows - 1) / 2 - inv_row) * self.tile_height
-            trans_node.inputs['Scale'].default_value = 1.0
-            trans_node.location = (300, -300 * i)
-
-            nt.links.new(img_node.outputs['Image'], trans_node.inputs['Image'])
-
-            mix = nt.nodes.new("CompositorNodeAlphaOver")
-            mix.location = (600, -300 * i)
-
-            # background → input 1
-            nt.links.new(alpha_chain.outputs[0], mix.inputs[1])
-            # tile → input 2
-            nt.links.new(trans_node.outputs['Image'], mix.inputs[2])
-
-            alpha_chain = mix
-
-        nt.links.new(alpha_chain.outputs['Image'], comp_node.inputs['Image'])
-
-        scene.render.filepath = os.path.normpath(os.path.abspath(output_path))
-        scene.render.image_settings.file_format = 'PNG'
-        scene.render.image_settings.color_mode = 'RGBA'
-
-        bpy.ops.render.render(write_still=True)
-
-        scene.render.resolution_x = orig_resolution_x
-        scene.render.resolution_y = orig_resolution_y
+def unregister():
+    bpy.utils.unregister_class(QuiltRenderer)

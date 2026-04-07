@@ -29,13 +29,17 @@ class CustomProps(bpy.types.PropertyGroup):
         subtype='DISTANCE',
         update=update_ray_source_x
     )
-
     ray_source_rotation: FloatProperty(
         name="Ray Source Rotation",
         default=math.pi / 2,
         subtype='ANGLE',
         unit='ROTATION',
         update=update_ray_source_rotation
+    )
+    lens_depth: FloatProperty(
+        name="Lens Depth",
+        default=3,
+        unit='NONE'
     )
 
 
@@ -52,6 +56,7 @@ class LensVisualizationPanel(bpy.types.Panel):
 
         layout.prop(cus_pt, "ray_source_x")
         layout.prop(cus_pt, "ray_source_rotation")
+        layout.prop(cus_pt, "lens_depth")
 
         layout.operator("object.scene_spawner", text="Spawn Scene")
 

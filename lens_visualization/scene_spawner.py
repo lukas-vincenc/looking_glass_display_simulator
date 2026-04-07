@@ -8,7 +8,7 @@ from ..lens_helpers.lens_math import LensParameters
 from . import refraction_geometry_nodes
 
 
-def spawn_lens():
+def spawn_lens(depth):
     target_coll = get_or_create_collection("Raycast_Targets")
 
     lens_radius = 1
@@ -27,8 +27,10 @@ def spawn_lens():
     params = LensParameters(
         radius=lens_radius,
         height=lens_height,
+        depth=depth,
         tilt=tilt,
         center=center,
+        missing_lenses=0,
         vertices=cylinder_vertices
     )
 
@@ -121,7 +123,10 @@ class SceneSpawner(bpy.types.Operator):
     bl_description = "Spawns a lens and a laser to simulate how light travels through it"
 
     def execute(self, context):
-        spawn_lens()
+        scene = context.scene
+        props = scene.lvis_custom_props
+
+        spawn_lens(props.lens_depth)
         spawn_wall()
         spawn_ray_source()
 

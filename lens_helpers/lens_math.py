@@ -6,6 +6,7 @@ from dataclasses import dataclass
 class LensParameters:
     radius: float
     height: float
+    depth: float
     tilt: float
     center: float
     missing_lenses: int
@@ -17,6 +18,7 @@ def calculate_lens_parameters(
         pitch,
         height,
         width,
+        depth,
         tilt,
         center,
         vertices=512
@@ -40,6 +42,7 @@ def calculate_lens_parameters(
     return LensParameters(
         radius=lens_radius,
         height=lens_height,
+        depth=depth,
         tilt=tilt,
         center=center,
         missing_lenses=missing_lenses,

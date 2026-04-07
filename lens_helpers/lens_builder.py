@@ -3,7 +3,7 @@ from mathutils import Vector
 from .lens_math import LensParameters
 
 
-def flatten_lens_on_side(lens, side, lens_radius, lens_height):
+def flatten_lens_on_side(lens, side, lens_radius, lens_height, lens_depth):
     # TODO: update to match technical report
 
     flatten_offset = lens_radius * 0.5
@@ -16,7 +16,7 @@ def flatten_lens_on_side(lens, side, lens_radius, lens_height):
     cube.name = "Flatten"
 
     cube.scale.x = lens_radius / 1.5
-    cube.scale.y = lens_radius * 3
+    cube.scale.y = lens_radius * 3 * lens_depth
     cube.scale.z = lens_height
 
     bool_mod = lens.modifiers.new(name="FlatSide", type='BOOLEAN')
@@ -47,11 +47,14 @@ def set_origin_bottom_center(obj):
 def build_lens(params: LensParameters, material):
     lens_radius = params.radius
     lens_height = params.height
+    lens_depth = params.depth
     lens_tilt = params.tilt
     center = params.center
     cylinder_vertices = params.vertices
 
-    flatten_offset = lens_radius * 0.8
+    depth_multiplier = lens_depth - 1
+
+    flatten_offset = lens_radius * (depth_multiplier / 2)
 
     bpy.ops.mesh.primitive_cylinder_add(
         vertices=cylinder_vertices,
@@ -72,7 +75,7 @@ def build_lens(params: LensParameters, material):
     cube.name = "Flatten"
 
     cube.scale.x = lens_radius * 2
-    cube.scale.y = lens_radius * 1.6
+    cube.scale.y = lens_radius * depth_multiplier
     cube.scale.z = lens_height
 
     bool_mod = lens.modifiers.new(name="FlatSide", type='BOOLEAN')
@@ -84,8 +87,8 @@ def build_lens(params: LensParameters, material):
 
     bpy.data.objects.remove(cube, do_unlink=True)
 
-    flatten_lens_on_side(lens, -1, lens_radius, lens_height)
-    flatten_lens_on_side(lens, 1, lens_radius, lens_height)
+    flatten_lens_on_side(lens, -1, lens_radius, lens_height, lens_depth)
+    flatten_lens_on_side(lens, 1, lens_radius, lens_height, lens_depth)
 
     lens.rotation_euler.y = abs(lens_tilt)
 

@@ -27,6 +27,7 @@ def recalc_lens_geometry(self, context):
         pitch=custom_props.lds_pitch,
         height=custom_props.lds_height,
         width=custom_props.lds_width,
+        depth=custom_props.lds_depth,
         tilt=custom_props.lds_tilt,
         center=center,
     )
@@ -186,7 +187,7 @@ class CustomProps(bpy.types.PropertyGroup):
         name="Image",
         description="Select image to spawn as plane",
         subtype='FILE_PATH',
-        update=recalc_lens_geometry
+        update=update_image_plane
     )
     lds_width: FloatProperty(
         name="Width",
@@ -203,6 +204,11 @@ class CustomProps(bpy.types.PropertyGroup):
         max=1000,
         precision=2,
         update=recalc_lens_geometry
+    )
+    lds_depth: FloatProperty(
+        name="Lens Depth",
+        default=3,
+        unit='NONE'
     )
 
 
@@ -229,11 +235,15 @@ class DisplaySimulatorPanel(bpy.types.Panel):
 
         layout.separator()
 
-        layout.label(text="Display lens configuration")
+        layout.label(text="Dynamic lens configuration")
 
         layout.prop(cus_pt, "lds_pitch")
         layout.prop(cus_pt, "lds_tilt")
         layout.prop(cus_pt, "lds_center")
+
+        layout.label(text="Static lens configuration")
+
+        layout.prop(cus_pt, "lds_depth")
 
         layout.operator("object.display_spawner", text="Spawn Display")
 

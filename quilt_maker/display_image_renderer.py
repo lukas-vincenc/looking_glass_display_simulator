@@ -1,188 +1,185 @@
-import bpy
 import math
+import bpy
 import os
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor
 from time import gmtime, strftime
-
-
-def load_pixels(filepath):
-    img = bpy.data.images.load(filepath)
-    return list(img.pixels[:])  # flat RGBA floats
-
-
-def load_tiles(tile_paths):
-    with ThreadPoolExecutor(max_workers=min(os.cpu_count(), 16)) as ex:
-        return list(ex.map(load_pixels, tile_paths))
-
-
-def render_all_tiles(scene, cameras, temp_dir):
-    orig_cam = scene.camera
-    orig_path = scene.render.filepath
-
-    tile_paths = []
-
-    for idx, cam in enumerate(cameras):
-        scene.camera = cam
-        out_path = os.path.join(temp_dir, f"tile_{idx:03d}.png")
-        scene.render.filepath = out_path
-        bpy.ops.render.render(write_still=True)
-        tile_paths.append(out_path)
-
-    scene.camera = orig_cam
-    scene.render.filepath = orig_path
-
-    return tile_paths
-
-
-def collect_sorted_cameras():
-    objs = bpy.data.objects
-    cams = [obj for obj in objs if obj.name.startswith("QuiltCamera")]
-    cams.sort(key=lambda cam: int(cam.name.split("_")[-1]))
-    return cams
 
 
 class DisplayImageRenderer(bpy.types.Operator):
     bl_idname = "qm.render_display_image"
     bl_label = "Render Display Image"
-    bl_description = "Render a display-ready hologram image from quilt cameras"
+    bl_description = "Render a hologram image (Modal - No UI Freeze)"
 
-    quilt_width = None
-    quilt_height = None
-    tile_width = None
-    tile_height = None
+    # Internal state for modal
+    _timer = None
+    _cameras = []
+    _tile_paths = []
+    _current_index = 0
+    _temp_dir = ""
+    _target_dir = ""
 
-    grid_cols = None
-    grid_rows = None
+    def modal(self, context, event):
+        # Allow user to cancel with ESC
+        if event.type == 'ESC':
+            self.cleanup_temp_files()
+            context.workspace.status_text_set(None)
+            self.report({'INFO'}, "Render Cancelled")
+            return self.cancel(context)
 
-    cam_count = None
-    quilt = None
+        if event.type == 'TIMER':
+            # Phase 1: Rendering Tiles
+            if self._current_index < len(self._cameras):
+                cam = self._cameras[self._current_index]
+                self.render_single_tile(context.scene, cam, self._current_index)
 
-    pitch = None  # 354.677
-    tilt = None  # -0.113949
-    center = None  # -0.400272
-    color_shift = 0.00013  # 0.00013
+                # Update progress in the status bar (bottom of Blender)
+                progress = (self._current_index + 1) / len(self._cameras) * 100
+                context.workspace.status_text_set(
+                    f"Quilt Maker: Rendering View {self._current_index + 1}/{len(self._cameras)} ({int(progress)}%) - Press ESC to Cancel"
+                )
 
-    # ------------------------------------------------------------------
-    # EXECUTE
-    # ------------------------------------------------------------------
+                self._current_index += 1
+                return {'RUNNING_MODAL'}
+
+            # Phase 2: Processing and Cleanup
+            else:
+                context.workspace.status_text_set("Quilt Maker: Finalizing Image...")
+                self.process_final_image(context)
+                self.cleanup_temp_files()
+                context.workspace.status_text_set(None)
+                return self.cancel(context)
+
+        return {'PASS_THROUGH'}
+
     def execute(self, context):
         scene = context.scene
         custom_props = scene.qm_custom_props
+        self._target_dir = custom_props.qm_quilt_render_target_directory
 
-        target_directory = custom_props.qm_quilt_render_target_directory
-
-        if not target_directory:
+        if not self._target_dir:
             self.report({'ERROR'}, "Please select a target directory")
             return {'CANCELLED'}
 
-        cameras = collect_sorted_cameras()
-        if not cameras:
-            self.report({'ERROR'}, "No quilt camera list found. Spawn cameras first.")
+        # Find and sort cameras
+        self._cameras = [obj for obj in bpy.data.objects if obj.name.startswith("QuiltCam")]
+        self._cameras.sort(key=lambda cam: int(cam.name.split("_")[-1]))
+
+        if not self._cameras:
+            self.report({'ERROR'}, "No quilt cameras found. Spawn cameras first.")
             return {'CANCELLED'}
 
-        self.cam_count = len(cameras)
-        self.grid_cols = math.ceil(math.sqrt(self.cam_count))
-        self.grid_rows = math.ceil(self.cam_count / self.grid_cols)
-        self.tile_width = scene.render.resolution_x
-        self.tile_height = scene.render.resolution_y
+        # Setup temp directory
+        self._temp_dir = os.path.join(self._target_dir, "quilt_temp")
+        os.makedirs(self._temp_dir, exist_ok=True)
 
-        self.pitch = custom_props.qm_pitch
-        self.tilt = math.degrees(custom_props.qm_tilt)
-        self.center = custom_props.qm_center
+        self._tile_paths = []
+        self._current_index = 0
 
-        bpy.context.scene.use_nodes = False
+        # Start Modal and Timer
+        wm = context.window_manager
+        self._timer = wm.event_timer_add(0.01, window=context.window)
+        wm.modal_handler_add(self)
 
-        # prepare temp render directory
-        temp_dir = os.path.join(target_directory, "quilt_temp")
-        os.makedirs(temp_dir, exist_ok=True)
+        return {'RUNNING_MODAL'}
 
-        # render all cameras
-        tile_paths = render_all_tiles(scene, cameras, temp_dir)
+    def render_single_tile(self, scene, cam, idx):
+        scene.camera = cam
+        out_path = os.path.join(self._temp_dir, f"tile_{idx:03d}.png")
+        scene.render.filepath = out_path
+        bpy.ops.render.render(write_still=True)
+        self._tile_paths.append(out_path)
 
-        tiles = load_tiles(tile_paths)
-        final_buf = self.build_display_image_from_tiles(tiles)
+    def process_final_image(self, context):
+        scene = context.scene
+        custom_props = scene.qm_custom_props
 
-        # create final image in Blender
+        # 1. Load pixels from files
+        tiles = []
+        for p in self._tile_paths:
+            img = bpy.data.images.load(p)
+            tiles.append(list(img.pixels[:]))
+            bpy.data.images.remove(img)  # Free memory immediately
+
+        # 2. Build the image using NumPy
+        final_pixels = self.build_display_image_logic(tiles, scene, custom_props)
+
+        # 3. Create Blender Image
         out_name = "Display_Image"
         if out_name in bpy.data.images:
             bpy.data.images.remove(bpy.data.images[out_name])
 
         out_img = bpy.data.images.new(
             out_name,
-            width=self.tile_width,
-            height=self.tile_height
+            width=scene.render.resolution_x,
+            height=scene.render.resolution_y
         )
-        out_img.pixels = final_buf
 
-        # save
-        out_path = os.path.join(target_directory, self.build_file_name())
+        # SPEED UP: Use foreach_set instead of .tolist()
+        # This copies raw data directly to C-buffer, bypassing Python list creation overhead
+        out_img.pixels.foreach_set(final_pixels.flatten())
+
+        # 4. Save
+        out_path = os.path.join(self._target_dir, self.build_file_name(custom_props))
         out_img.filepath_raw = out_path
         out_img.file_format = 'PNG'
         out_img.save()
 
-        # cleanup
-        for p in tile_paths:
-            try:
-                os.remove(p)
-            except:
-                pass
+        self.report({'INFO'}, f"Saved: {os.path.basename(out_path)}")
 
-        return {'FINISHED'}
-
-    def build_display_image_from_tiles(self, tiles):
-        tile_w = self.tile_width
-        tile_h = self.tile_height
-        out_w = tile_w
-        out_h = tile_h
-
+    def build_display_image_logic(self, tiles, scene, props):
+        tile_w = scene.render.resolution_x
+        tile_h = scene.render.resolution_y
         total_views = len(tiles)
 
-        tilt_factor = self.tilt / 100
-        pitch = self.pitch
-        center = self.center
-        cs = self.color_shift
+        # Params
+        tilt_factor = math.degrees(props.qm_tilt) / 100
+        pitch = props.qm_pitch
+        center = props.qm_center
+        cs = 0.00013  # color_shift constant
 
-        # Convert tiles to numpy: shape = (views, H*W*4)
         tiles_np = np.asarray(tiles, dtype=np.float32)
 
-        # Create coordinate grids
-        y = np.arange(out_h, dtype=np.float32)
-        x = np.arange(out_w, dtype=np.float32)
+        y = np.arange(tile_h, dtype=np.float32)
+        x = np.arange(tile_w, dtype=np.float32)
+        sy = (y[:, None] / tile_h)
+        sx = 1.0 - (x[None, :] / tile_w)
 
-        sy = (y[:, None] / out_h)
-        sx = 1.0 - (x[None, :] / out_w)
-
-        # Compute view_pick
         view_pick = (sx + cs + sy * tilt_factor) * pitch - center
         view_pick = view_pick - np.floor(view_pick)
+        view = (view_pick * (total_views - 1)).astype(np.int32)
 
-        # View index
-        view = (view_pick * (total_views - 1)).astype(np.int32)  # shape (H,W)
+        idx = (np.arange(tile_h)[:, None] * tile_w + np.arange(tile_w)[None, :]) * 4
+        idx = idx.astype(np.int32)
 
-        # Pixel indices inside flat tile buffer
-        idx = (np.arange(out_h)[:, None] * tile_w + np.arange(out_w)[None, :]) * 4
-        idx = idx.astype(np.int32)  # shape (H,W)
+        # Build output RGBA
+        out = np.empty((tile_h, tile_w, 4), dtype=np.float32)
+        out[..., 0] = tiles_np[view, idx]  # R
+        out[..., 1] = tiles_np[view, idx + 1]  # G
+        out[..., 2] = tiles_np[view, idx + 2]  # B
+        out[..., 3] = 1.0  # A
 
-        # Gather RGB
+        return out
 
-        r = tiles_np[view, idx]
-        g = tiles_np[view, idx + 1]
-        b = tiles_np[view, idx + 2]
+    def cleanup_temp_files(self):
+        for p in self._tile_paths:
+            if os.path.exists(p):
+                try:
+                    os.remove(p)
+                except:
+                    pass
+        if os.path.exists(self._temp_dir) and not os.listdir(self._temp_dir):
+            os.rmdir(self._temp_dir)
 
-        # Build output buffer
-        out = np.empty((out_h, out_w, 4), dtype=np.float32)
-        out[..., 0] = r
-        out[..., 1] = g
-        out[..., 2] = b
-        out[..., 3] = 1.0  # alpha
+    def build_file_name(self, props):
+        timestamp = strftime("%Y-%m-%d_%H-%M-%S", gmtime())
+        tilt_deg = math.degrees(props.qm_tilt)
+        return f"{timestamp}_P{props.qm_pitch}_T{tilt_deg:.2f}_C{props.qm_center}.png"
 
-        # Return flat buffer like original
-        return out.reshape(-1).tolist()
-
-    def build_file_name(self):
-        now = strftime("%Y-%m-%d_%H-%M-%S", gmtime())
-        return now + '_pitch_' + str(self.pitch) + '_tilt_' + str(self.tilt) + '_center_' + str(self.center) + '.png'
+    def cancel(self, context):
+        wm = context.window_manager
+        if self._timer:
+            wm.event_timer_remove(self._timer)
+        return {'FINISHED'}
 
 
 def register():
