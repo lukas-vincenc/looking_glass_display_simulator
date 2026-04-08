@@ -3,20 +3,20 @@ from mathutils import Vector
 from .lens_math import LensParameters
 
 
-def flatten_lens_on_side(lens, side, lens_radius, lens_height, lens_depth):
-    # TODO: update to match technical report
-
+def flatten_lens_on_side(lens, side, lens_radius, lens_height, lens_depth, lens_width_percentage):
     flatten_offset = lens_radius * 0.5
+
+    flatten_x = 1 - (lens_width_percentage / 100)
 
     bpy.ops.mesh.primitive_cube_add(
         size=1,
-        location=(side * lens_radius, flatten_offset, 0)
+        location=(side * lens_radius * (1 - (flatten_x / 2)), flatten_offset, 0)
     )
     cube = bpy.context.object
     cube.name = "Flatten"
 
-    cube.scale.x = lens_radius / 1.5
-    cube.scale.y = lens_radius * 3 * lens_depth
+    cube.scale.x = lens_radius * flatten_x
+    cube.scale.y = lens_radius * lens_depth * 2
     cube.scale.z = lens_height
 
     bool_mod = lens.modifiers.new(name="FlatSide", type='BOOLEAN')
@@ -48,6 +48,7 @@ def build_lens(params: LensParameters, material):
     lens_radius = params.radius
     lens_height = params.height
     lens_depth = params.depth
+    lens_width_percentage = params.width_percentage
     lens_tilt = params.tilt
     center = params.center
     cylinder_vertices = params.vertices
@@ -87,8 +88,8 @@ def build_lens(params: LensParameters, material):
 
     bpy.data.objects.remove(cube, do_unlink=True)
 
-    flatten_lens_on_side(lens, -1, lens_radius, lens_height, lens_depth)
-    flatten_lens_on_side(lens, 1, lens_radius, lens_height, lens_depth)
+    flatten_lens_on_side(lens, -1, lens_radius, lens_height, lens_depth, lens_width_percentage)
+    flatten_lens_on_side(lens, 1, lens_radius, lens_height, lens_depth, lens_width_percentage)
 
     lens.rotation_euler.y = abs(lens_tilt)
 
@@ -105,7 +106,7 @@ def build_lens(params: LensParameters, material):
     size_y = max(v.y for v in bbox) - min(v.y for v in bbox)
     size_z = max(v.z for v in bbox) - min(v.z for v in bbox)
 
-    lens.location.x = center * lens_radius * 2 * (3 / 4)
+    lens.location.x = center * lens_radius * 2 / (lens_width_percentage * 2)
     lens.location.y = -0.000001
     lens.location.z = 0
 

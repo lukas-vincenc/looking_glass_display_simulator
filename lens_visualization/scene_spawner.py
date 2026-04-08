@@ -8,7 +8,7 @@ from ..lens_helpers.lens_math import LensParameters
 from . import refraction_geometry_nodes
 
 
-def spawn_lens(depth):
+def spawn_lens(depth, width_percentage):
     target_coll = get_or_create_collection("Raycast_Targets")
 
     lens_radius = 1
@@ -28,6 +28,7 @@ def spawn_lens(depth):
         radius=lens_radius,
         height=lens_height,
         depth=depth,
+        width_percentage=width_percentage,
         tilt=tilt,
         center=center,
         missing_lenses=0,
@@ -37,7 +38,7 @@ def spawn_lens(depth):
     lens = build_lens(params, material)
 
     # match original location
-    lens.location = (-0.66, 10, -5)
+    lens.location = (-(width_percentage / 100), 10, -5)
 
     move_object_to_collection(lens, target_coll)
 
@@ -126,7 +127,7 @@ class SceneSpawner(bpy.types.Operator):
         scene = context.scene
         props = scene.lvis_custom_props
 
-        spawn_lens(props.lens_depth)
+        spawn_lens(props.lens_depth, props.lens_width)
         spawn_wall()
         spawn_ray_source()
 

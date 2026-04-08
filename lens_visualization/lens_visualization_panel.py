@@ -41,6 +41,13 @@ class CustomProps(bpy.types.PropertyGroup):
         default=3,
         unit='NONE'
     )
+    lens_width: FloatProperty(
+        name="Lens Width",
+        default=200/3,
+        min=0,
+        max=100,
+        subtype='PERCENTAGE'
+    )
 
 
 class LensVisualizationPanel(bpy.types.Panel):
@@ -57,6 +64,7 @@ class LensVisualizationPanel(bpy.types.Panel):
         layout.prop(cus_pt, "ray_source_x")
         layout.prop(cus_pt, "ray_source_rotation")
         layout.prop(cus_pt, "lens_depth")
+        layout.prop(cus_pt, "lens_width")
 
         layout.operator("object.scene_spawner", text="Spawn Scene")
 

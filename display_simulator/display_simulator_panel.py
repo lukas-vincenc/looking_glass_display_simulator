@@ -27,6 +27,7 @@ def recalc_lens_geometry(self, context):
         pitch=custom_props.lds_pitch,
         height=custom_props.lds_height,
         width=custom_props.lds_width,
+        width_percentage=custom_props.lds_lens_width,
         depth=custom_props.lds_depth,
         tilt=custom_props.lds_tilt,
         center=center,
@@ -210,6 +211,13 @@ class CustomProps(bpy.types.PropertyGroup):
         default=3,
         unit='NONE'
     )
+    lds_lens_width: FloatProperty(
+        name="Lens Width",
+        default=200/3,
+        min=0,
+        max=100,
+        subtype='PERCENTAGE'
+    )
 
 
 class DisplaySimulatorPanel(bpy.types.Panel):
@@ -244,6 +252,7 @@ class DisplaySimulatorPanel(bpy.types.Panel):
         layout.label(text="Static lens configuration")
 
         layout.prop(cus_pt, "lds_depth")
+        layout.prop(cus_pt, "lds_lens_width")
 
         layout.operator("object.display_spawner", text="Spawn Display")
 
