@@ -61,7 +61,7 @@ def sync_camera_array(context):
 
 class CamerasSpawner(bpy.types.Operator):
     bl_idname = "qm.cameras_spawner"
-    bl_label = "Force Sync Cameras"
+    bl_label = "Reload Cameras Focus"
 
     def execute(self, context):
         sync_camera_array(context)

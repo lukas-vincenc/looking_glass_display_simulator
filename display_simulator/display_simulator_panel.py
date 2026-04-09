@@ -236,25 +236,37 @@ class DisplaySimulatorPanel(bpy.types.Panel):
 
         layout.separator()
 
-        layout.label(text="Display Aspect Ratio")
+        layout.label(text="Display Aspect Ratio", icon="OUTLINER_COLLECTION")
 
         layout.prop(cus_pt, "lds_width")
         layout.prop(cus_pt, "lds_height")
 
         layout.separator()
 
-        layout.label(text="Dynamic lens configuration")
+        col = layout.column(align=True)
+        col.label(text="Dynamic lens configuration", icon="OUTLINER_COLLECTION")
+        row = col.row()
+        row.enabled = False
+        row.label(text="(changes in real-time)")
 
         layout.prop(cus_pt, "lds_pitch")
         layout.prop(cus_pt, "lds_tilt")
         layout.prop(cus_pt, "lds_center")
 
-        layout.label(text="Static lens configuration")
+        layout.separator()
+
+        col = layout.column(align=True)
+        col.label(text="Static lens configuration", icon="OUTLINER_COLLECTION")
+        row = col.row()
+        row.enabled = False
+        row.label(text="(needs scene reloading to take effect)")
 
         layout.prop(cus_pt, "lds_depth")
         layout.prop(cus_pt, "lds_lens_width")
 
-        layout.operator("object.display_spawner", text="Spawn Display")
+        layout.separator()
+
+        layout.operator("object.display_spawner", text="Load Display")
 
 
 all_classes = [

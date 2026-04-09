@@ -61,12 +61,27 @@ class LensVisualizationPanel(bpy.types.Panel):
         layout = self.layout
         cus_pt = context.scene.lvis_custom_props
 
+        col = layout.column(align=True)
+        col.label(text="Dynamic scene configuration", icon="OUTLINER_COLLECTION")
+        row = col.row()
+        row.enabled = False
+        row.label(text="(changes in real-time)")
+
         layout.prop(cus_pt, "ray_source_x")
         layout.prop(cus_pt, "ray_source_rotation")
+
+        layout.separator()
+
+        col = layout.column(align=True)
+        col.label(text="Static lens configuration", icon="OUTLINER_COLLECTION")
+        row = col.row()
+        row.enabled = False
+        row.label(text="(needs scene reloading to take effect)")
+
         layout.prop(cus_pt, "lens_depth")
         layout.prop(cus_pt, "lens_width")
 
-        layout.operator("object.scene_spawner", text="Spawn Scene")
+        layout.operator("object.scene_spawner", text="Load Scene")
 
 
 all_classes = [

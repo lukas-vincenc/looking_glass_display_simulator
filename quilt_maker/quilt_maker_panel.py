@@ -1,7 +1,7 @@
 import math
 
 import bpy
-from bpy.props import (StringProperty, IntProperty, FloatProperty, PointerProperty)
+from bpy.props import (StringProperty, IntProperty, FloatProperty, PointerProperty, BoolProperty)
 
 from .cameras_spawner import CamerasSpawner
 from .display_image_renderer import DisplayImageRenderer
@@ -42,13 +42,13 @@ class CustomProps(bpy.types.PropertyGroup):
         update=update_cameras
     )
     qm_focus_camera: PointerProperty(
-        name="Primary Camera",
+        name="",
         type=bpy.types.Object,
         poll=lambda self, obj: obj.type == 'CAMERA',
         update=update_cameras
     )
     qm_focus_object: PointerProperty(
-        name="Focus Object",
+        name="",
         type=bpy.types.Object,
         update=update_cameras
     )
@@ -112,6 +112,10 @@ class CustomProps(bpy.types.PropertyGroup):
         min=0,
         update=update_preview_camera
     )
+    qm_view_hints: BoolProperty(
+        name="View Hints",
+        default=False
+    )
 
 
 class QuiltMakerPanel(bpy.types.Panel):
@@ -125,6 +129,8 @@ class QuiltMakerPanel(bpy.types.Panel):
         layout = self.layout
         cus_pt = context.scene.qm_custom_props
 
+        layout.prop(cus_pt, "qm_view_hints")
+
         layout.label(text="Spawn Camera Array:", icon="OUTLINER_COLLECTION")
 
         layout.label(text="Views Grid Dimensions:")
@@ -134,22 +140,33 @@ class QuiltMakerPanel(bpy.types.Panel):
         cam_count = cus_pt.qm_x_views * cus_pt.qm_y_views
         layout.label(text=f"Camera Count: {cam_count}")
 
-        row = layout.row(align=True)
-        row.prop(cus_pt, "qm_focus_camera")
-        row.operator("qm.view_primary_camera", text="", icon='HIDE_OFF')
+        col = layout.column(align=True)
+        col.label(text="Primary Camera:")
+        col.prop(cus_pt, "qm_focus_camera")
 
-        layout.prop(cus_pt, "qm_focus_object")
+        col = layout.column(align=True)
+        col.label(text="Focus Object:")
+        col.prop(cus_pt, "qm_focus_object")
         layout.prop(cus_pt, "qm_spacing")
+
+        if cus_pt.qm_view_hints:
+            row = layout.row()
+            row.enabled = False
+            col = row.column(align=True)
+            col.label(text="Manual reload necessary whenever")
+            col.label(text="primary camera positioning")
+            col.label(text="or scene layout changes")
 
         layout.operator("qm.cameras_spawner")
 
+        layout.separator()
+
         # Add the Preview Field here
         col = layout.column(align=True)
-        col.label(text="Camera Preview Control:", icon='VIEW_CAMERA')
+        col.label(text="Camera Preview Control:")
 
-        # Clamp the max index dynamically so the user can't select a non-existent camera
-        row = col.row(align=True)
-        row.prop(cus_pt, "qm_preview_index", text="View Index")
+        layout.prop(cus_pt, "qm_preview_index", text="Camera View Index")
+        layout.operator("qm.view_primary_camera", text="View primary camera")
 
         layout.separator()
 
