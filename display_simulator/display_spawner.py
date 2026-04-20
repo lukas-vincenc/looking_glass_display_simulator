@@ -1,9 +1,30 @@
 import bpy
 
 from .lens_geometry_nodes import get_node_tree
-from ..lens_helpers.materials import get_lens_material
+from ..lens_helpers.materials import get_lens_material, get_block_material
 from ..lens_helpers.lens_builder import build_lens
 from ..lens_helpers.lens_math import calculate_lens_parameters
+
+
+def get_refractive_block(custom_props, display_width, lens_depth):
+    block_height = custom_props.lds_height / (custom_props.lds_width * display_width)
+    block_depth = 0.1
+
+    bpy.ops.mesh.primitive_cube_add(
+        size=1,
+        location=(0.5, (-block_depth / 2) - lens_depth, block_height / 2)
+    )
+
+    block = bpy.context.object
+    block.name = "RefractiveBlock"
+
+    block.scale.y = block_depth
+    block.scale.z = block_height
+
+    material = get_block_material()
+    block.data.materials.append(material)
+
+    return block
 
 
 class DisplaySpawner(bpy.types.Operator):
@@ -30,7 +51,7 @@ class DisplaySpawner(bpy.types.Operator):
 
         # remove old lenses
         for obj in bpy.data.objects:
-            if obj.name.startswith("Lens") or obj.name.startswith("Flatten_"):
+            if obj.name.startswith("Lens") or obj.name.startswith("Flatten_") or obj.name.startswith("RefractiveBlock"):
                 bpy.data.objects.remove(obj, do_unlink=True)
 
         params = calculate_lens_parameters(
@@ -70,5 +91,7 @@ class DisplaySpawner(bpy.types.Operator):
 
         if extra_lenses_identifier:
             gn_mod[extra_lenses_identifier] = params.missing_lenses
+
+        get_refractive_block(custom_props, self.DISPLAY_WIDTH, params.depth * params.radius)
 
         return {'FINISHED'}
