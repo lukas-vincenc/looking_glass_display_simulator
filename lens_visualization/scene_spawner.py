@@ -17,11 +17,6 @@ def spawn_lens(depth, width_percentage):
     center = 0
     tilt = 0
 
-    # clear old lenses
-    for obj in bpy.data.objects:
-        if obj.name.startswith("Lens") or obj.name.startswith("Flatten"):
-            bpy.data.objects.remove(obj, do_unlink=True)
-
     material = get_lens_material()
 
     params = LensParameters(
@@ -46,11 +41,6 @@ def spawn_lens(depth, width_percentage):
 def spawn_wall():
     target_coll = get_or_create_collection("Raycast_Targets")
 
-    # clear old walls
-    for obj in bpy.data.objects:
-        if obj.name.startswith("Wall"):
-            bpy.data.objects.remove(obj, do_unlink=True)
-
     bpy.ops.mesh.primitive_plane_add(
         size=100,
         location=(0, 20, 0),
@@ -65,11 +55,6 @@ def spawn_wall():
 
 def spawn_ray_source():
     target_coll = get_or_create_collection("Ray_Source")
-
-    # clear old sources
-    for obj in bpy.data.objects:
-        if obj.name.startswith("Ray"):
-            bpy.data.objects.remove(obj, do_unlink=True)
 
     # source used to control the ray
     bpy.ops.object.empty_add(
@@ -118,6 +103,14 @@ def move_object_to_collection(obj, target_coll):
             coll.objects.unlink(obj)
 
 
+def clear_scene():
+    prefixes = ("Ray", "Wall", "Lens", "Flatten")
+
+    for obj in bpy.data.objects:
+        if obj.name.startswith(prefixes):
+            bpy.data.objects.remove(obj, do_unlink=True)
+
+
 class SceneSpawner(bpy.types.Operator):
     bl_idname = "object.scene_spawner"
     bl_label = "Scene Spawner"
@@ -127,6 +120,7 @@ class SceneSpawner(bpy.types.Operator):
         scene = context.scene
         props = scene.lvis_custom_props
 
+        clear_scene()
         spawn_lens(props.lens_depth, props.lens_width)
         spawn_wall()
         spawn_ray_source()
