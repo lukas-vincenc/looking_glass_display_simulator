@@ -2,21 +2,23 @@ import bpy
 
 from .lens_geometry_nodes import get_node_tree
 from ..lens_helpers.materials import get_lens_material, get_block_material
-from ..lens_helpers.lens_builder import build_lens
+from ..lens_helpers.lens_builder import build_lens, set_origin_bottom_center
 from ..lens_helpers.lens_math import calculate_lens_parameters
 
 
 def get_refractive_block(custom_props, display_width, lens_depth):
     block_height = custom_props.lds_height / (custom_props.lds_width * display_width)
-    block_depth = 0.1
+    block_depth = custom_props.lds_block_depth
 
     bpy.ops.mesh.primitive_cube_add(
         size=1,
-        location=(0.5, (-block_depth / 2) - lens_depth, block_height / 2)
+        location=(0.5, - 0.5 - lens_depth, 0.5),
     )
 
     block = bpy.context.object
     block.name = "RefractiveBlock"
+
+    set_origin_bottom_center(block)
 
     block.scale.y = block_depth
     block.scale.z = block_height

@@ -158,6 +158,14 @@ def update_image_plane(self, context):
     plane.rotation_euler = (math.pi / 2, 0, 0)
 
 
+def update_block(self, context):
+    obj = bpy.data.objects.get("RefractiveBlock")
+    if obj is None:
+        return
+
+    obj.scale.y = self.lds_block_depth
+
+
 # Custom properties shown in the extension UI panel
 class CustomProps(bpy.types.PropertyGroup):
     lds_pitch: IntProperty(
@@ -218,6 +226,12 @@ class CustomProps(bpy.types.PropertyGroup):
         max=100,
         subtype='PERCENTAGE'
     )
+    lds_block_depth: FloatProperty(
+        name="Block Depth",
+        default=0.15,
+        subtype='DISTANCE',
+        update=update_block
+    )
 
 
 class DisplaySimulatorPanel(bpy.types.Panel):
@@ -252,6 +266,8 @@ class DisplaySimulatorPanel(bpy.types.Panel):
         layout.prop(cus_pt, "lds_pitch")
         layout.prop(cus_pt, "lds_tilt")
         layout.prop(cus_pt, "lds_center")
+
+        layout.prop(cus_pt, "lds_block_depth")
 
         layout.separator()
 
