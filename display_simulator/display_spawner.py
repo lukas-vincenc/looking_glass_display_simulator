@@ -1,18 +1,18 @@
 import bpy
 
-from .lens_geometry_nodes import get_node_tree
+from .lens_geometry_nodes import get_node_tree, update_gn_pitch
 from ..lens_helpers.materials import get_lens_material, get_block_material
 from ..lens_helpers.lens_builder import build_lens, set_origin_bottom_center
 from ..lens_helpers.lens_math import calculate_lens_parameters
 
 
-def get_refractive_block(custom_props, display_width, lens_depth):
+def get_refractive_block(custom_props, display_width):
     block_height = custom_props.lds_height / (custom_props.lds_width * display_width)
     block_depth = custom_props.lds_block_depth
 
     bpy.ops.mesh.primitive_cube_add(
         size=1,
-        location=(0.5, - 0.5 - lens_depth, 0.5),
+        location=(0.5, -0.5, 0.5),
     )
 
     block = bpy.context.object
@@ -29,6 +29,13 @@ def get_refractive_block(custom_props, display_width, lens_depth):
     return block
 
 
+def clear_scene():
+    prefixes = ("RefractiveBlock", "Lens", "Flatten")
+    for obj in bpy.data.objects:
+        if obj.name.startswith(prefixes):
+            bpy.data.objects.remove(obj, do_unlink=True)
+
+
 class DisplaySpawner(bpy.types.Operator):
     bl_idname = "object.display_spawner"
     bl_label = "Display Spawner"
@@ -40,60 +47,32 @@ class DisplaySpawner(bpy.types.Operator):
         scene = context.scene
         custom_props = scene.lds_custom_props
 
+        # Render engine needs to be Cycles - simulates refraction
+        # GPU is a nice performance bonus - if Blender doesn't have a supported GPU selected, it stays on CPU on its own
         scene.render.engine = 'CYCLES'
         scene.cycles.device = 'GPU'
 
-        lens_tilt = custom_props.lds_tilt
-        center = custom_props.lds_center
-        pitch = custom_props.lds_pitch
-        height = custom_props.lds_height
-        width = custom_props.lds_width
-        lens_width_percentage = custom_props.lds_lens_width
-        depth = custom_props.lds_depth
-
-        # remove old lenses
-        for obj in bpy.data.objects:
-            if obj.name.startswith("Lens") or obj.name.startswith("Flatten_") or obj.name.startswith("RefractiveBlock"):
-                bpy.data.objects.remove(obj, do_unlink=True)
+        clear_scene()
 
         params = calculate_lens_parameters(
             display_width=self.DISPLAY_WIDTH,
-            pitch=pitch,
-            height=height,
-            width=width,
-            depth=depth,
-            width_percentage=lens_width_percentage,
-            tilt=lens_tilt,
-            center=center
+            pitch=custom_props.lds_pitch,
+            height=custom_props.lds_height,
+            width=custom_props.lds_width,
+            depth=custom_props.lds_depth,
+            width_percentage=custom_props.lds_lens_width,
+            tilt=custom_props.lds_tilt,
+            center=custom_props.lds_center
         )
 
         material = get_lens_material()
-
-        lens = build_lens(params, material)
+        lens = build_lens(params, material, self.DISPLAY_WIDTH)
 
         gn_tree = get_node_tree()
-
         gn_mod = lens.modifiers.new(name="LDS_GeometryNodes", type='NODES')
         gn_mod.node_group = gn_tree
+        update_gn_pitch(gn_mod, custom_props.lds_pitch, params.missing_lenses)
 
-        pitch_identifier = None
-        for item in gn_mod.node_group.interface.items_tree:
-            if item.name == "Pitch" and item.in_out == 'INPUT':
-                pitch_identifier = item.identifier
-                break
-
-        if pitch_identifier:
-            gn_mod[pitch_identifier] = pitch
-
-        extra_lenses_identifier = None
-        for item in gn_mod.node_group.interface.items_tree:
-            if item.name == "Extra Lenses" and item.in_out == 'INPUT':
-                extra_lenses_identifier = item.identifier
-                break
-
-        if extra_lenses_identifier:
-            gn_mod[extra_lenses_identifier] = params.missing_lenses
-
-        get_refractive_block(custom_props, self.DISPLAY_WIDTH, params.depth * params.radius)
+        get_refractive_block(custom_props, self.DISPLAY_WIDTH)
 
         return {'FINISHED'}

@@ -13,7 +13,6 @@ def spawn_lens(depth, width_percentage):
 
     lens_radius = 1
     lens_height = 10
-    cylinder_vertices = 512
     center = 0
     tilt = 0
 
@@ -27,10 +26,9 @@ def spawn_lens(depth, width_percentage):
         tilt=tilt,
         center=center,
         missing_lenses=0,
-        vertices=cylinder_vertices
     )
 
-    lens = build_lens(params, material)
+    lens = build_lens(params, material, 1)
 
     # match original location
     lens.location = (-(width_percentage / 100), 10, -5)

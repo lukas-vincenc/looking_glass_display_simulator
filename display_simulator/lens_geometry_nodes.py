@@ -1,5 +1,4 @@
 import bpy
-import typing
 
 
 def get_node_tree():
@@ -334,3 +333,23 @@ def get_node_tree():
     )
 
     return geometry_nodes_1
+
+
+def update_gn_pitch(gn_mod, pitch, missing_lenses):
+    pitch_identifier = None
+    for item in gn_mod.node_group.interface.items_tree:
+        if item.name == "Pitch" and item.in_out == 'INPUT':
+            pitch_identifier = item.identifier
+            break
+
+    if pitch_identifier:
+        gn_mod[pitch_identifier] = pitch
+
+    extra_lenses_identifier = None
+    for item in gn_mod.node_group.interface.items_tree:
+        if item.name == "Extra Lenses" and item.in_out == 'INPUT':
+            extra_lenses_identifier = item.identifier
+            break
+
+    if extra_lenses_identifier:
+        gn_mod[extra_lenses_identifier] = missing_lenses

@@ -11,7 +11,6 @@ class LensParameters:
     tilt: float
     center: float
     missing_lenses: int
-    vertices: int = 512
 
 
 def calculate_lens_parameters(
@@ -22,8 +21,7 @@ def calculate_lens_parameters(
         width_percentage,
         depth,
         tilt,
-        center,
-        vertices=512
+        center
 ):
     tilted_display_width = display_width * math.cos(abs(tilt))
 
@@ -48,6 +46,9 @@ def calculate_lens_parameters(
         width_percentage=width_percentage,
         tilt=tilt,
         center=center,
-        missing_lenses=missing_lenses,
-        vertices=vertices,
+        missing_lenses=missing_lenses
     )
+
+
+def get_real_width(params: LensParameters):
+    return params.radius * params.width_percentage * 2 / 100

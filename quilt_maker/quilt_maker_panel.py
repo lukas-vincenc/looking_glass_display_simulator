@@ -116,6 +116,11 @@ class CustomProps(bpy.types.PropertyGroup):
         name="View Hints",
         default=False
     )
+    qm_filename: StringProperty(
+        name="Filename",
+        default="quilt",
+        description="Define the name of the quilt file to be exported",
+    )
 
 
 class QuiltMakerPanel(bpy.types.Panel):
@@ -172,25 +177,27 @@ class QuiltMakerPanel(bpy.types.Panel):
 
         layout.label(text="Render Quilt:", icon="OUTLINER_COLLECTION")
         layout.prop(cus_pt, "qm_quilt_render_target_directory")
+        layout.prop(cus_pt, "qm_filename")
         layout.label(text="Resolution of One View:")
         layout.prop(cus_pt, "qm_view_x_resolution")
         layout.prop(cus_pt, "qm_view_y_resolution")
-        layout.operator("qm.render_quilt")
 
         quilt_x = cus_pt.qm_x_views * cus_pt.qm_view_x_resolution
         quilt_y = cus_pt.qm_y_views * cus_pt.qm_view_y_resolution
 
         layout.label(text=f"Quilt Resolution: {quilt_x} x {quilt_y}")
 
-        layout.separator()
+        layout.operator("qm.render_quilt")
 
-        layout.label(text="Render Display Image:", icon="OUTLINER_COLLECTION")
-
-        layout.prop(cus_pt, "qm_pitch")
-        layout.prop(cus_pt, "qm_tilt")
-        layout.prop(cus_pt, "qm_center")
-
-        layout.operator("qm.render_display_image")
+        # layout.separator()
+        #
+        # layout.label(text="Render Display Image:", icon="OUTLINER_COLLECTION")
+        #
+        # layout.prop(cus_pt, "qm_pitch")
+        # layout.prop(cus_pt, "qm_tilt")
+        # layout.prop(cus_pt, "qm_center")
+        #
+        # layout.operator("qm.render_display_image")
 
 
 all_classes = [

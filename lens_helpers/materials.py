@@ -1,12 +1,7 @@
 import bpy
 
 
-def get_lens_material():
-    mat_name = "LensMaterial"
-
-    if mat_name in bpy.data.materials:
-        return bpy.data.materials[mat_name]
-
+def create_glass_material(mat_name):
     mat = bpy.data.materials.new(mat_name)
     mat.use_nodes = True
 
@@ -30,6 +25,15 @@ def get_lens_material():
     links.new(glass.outputs['BSDF'], output.inputs['Surface'])
 
     return mat
+
+
+def get_lens_material():
+    mat_name = "LensMaterial"
+
+    if mat_name in bpy.data.materials:
+        return bpy.data.materials[mat_name]
+
+    return create_glass_material(mat_name)
 
 
 def get_block_material():
@@ -38,26 +42,4 @@ def get_block_material():
     if mat_name in bpy.data.materials:
         return bpy.data.materials[mat_name]
 
-    mat = bpy.data.materials.new(mat_name)
-    mat.use_nodes = True
-
-    nodes = mat.node_tree.nodes
-    links = mat.node_tree.links
-
-    # remove default nodes
-    for node in nodes:
-        nodes.remove(node)
-
-    output = nodes.new(type='ShaderNodeOutputMaterial')
-    output.location = (300, 0)
-
-    glass = nodes.new(type='ShaderNodeBsdfGlass')
-    glass.location = (0, 0)
-
-    glass.inputs['Roughness'].default_value = 0.0
-    glass.inputs['IOR'].default_value = 1.49
-    glass.inputs['Color'].default_value = (1, 1, 1, 1)
-
-    links.new(glass.outputs['BSDF'], output.inputs['Surface'])
-
-    return mat
+    return create_glass_material(mat_name)

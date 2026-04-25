@@ -8,7 +8,7 @@ from time import gmtime, strftime
 class DisplayImageRenderer(bpy.types.Operator):
     bl_idname = "qm.render_display_image"
     bl_label = "Render Display Image"
-    bl_description = "Render a hologram image (Modal - No UI Freeze)"
+    bl_description = "Render a hologram image"
 
     # Internal state for modal
     _timer = None

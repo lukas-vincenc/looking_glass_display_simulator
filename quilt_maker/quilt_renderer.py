@@ -1,14 +1,12 @@
-import math
 import bpy
 import os
 import numpy as np
-from time import gmtime, strftime
 
 
 class QuiltRenderer(bpy.types.Operator):
     bl_idname = "qm.render_quilt"
     bl_label = "Render Quilt"
-    bl_description = "Render a grid-based quilt (Modal - No UI Freeze)"
+    bl_description = "Render a quilt"
 
     _timer = None
     _cameras = []
@@ -140,7 +138,9 @@ class QuiltRenderer(bpy.types.Operator):
         quilt_img = bpy.data.images.new(out_name, width=quilt_w, height=quilt_h)
         quilt_img.pixels.foreach_set(quilt_data.flatten())
 
-        save_path = os.path.join(self._target_dir, "quilt.png")
+        aspect_ratio = round(th / tw, 3)
+        final_filename = f"{props.qm_filename}_qs{cols}x{rows}a{aspect_ratio}.png"
+        save_path = os.path.join(self._target_dir, final_filename)
         quilt_img.filepath_raw = save_path
         quilt_img.file_format = 'PNG'
         quilt_img.save()
