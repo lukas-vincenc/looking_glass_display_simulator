@@ -3,23 +3,24 @@ import math
 import bpy
 from bpy.props import (StringProperty, IntProperty, FloatProperty, PointerProperty, BoolProperty)
 
-from .cameras_spawner import CamerasSpawner
+from .cameras_spawner import CamerasSpawner, sync_camera_array
 from .display_image_renderer import DisplayImageRenderer
 from .primary_camera_selector import PrimaryCameraSelector
 from .quilt_renderer import QuiltRenderer
 
 
-def update_camera_count(self, context):
-    self.qm_camera_count = self.qm_x_views * self.qm_y_views
-
-
 def update_cameras(self, context):
-    from .cameras_spawner import sync_camera_array
     sync_camera_array(context)
 
 
 def update_preview_camera(self, context):
-    cam_name = f"QuiltCam_{self.qm_preview_index:03d}"
+    max_index = (self.qm_x_views * self.qm_y_views) - 1
+
+    if self.qm_preview_index > max_index:
+        self["qm_preview_index"] = max_index
+
+    idx = self["qm_preview_index"]
+    cam_name = f"QuiltCam_{idx:03d}"
     cam_obj = bpy.data.objects.get(cam_name)
 
     if cam_obj:
@@ -31,11 +32,6 @@ def update_preview_camera(self, context):
 
 # Custom properties shown in the extension UI panel
 class CustomProps(bpy.types.PropertyGroup):
-    qm_camera_count: IntProperty(
-        name="Camera Count",
-        default=48, min=1, max=200,
-        update=update_cameras
-    )
     qm_spacing: FloatProperty(
         name="Spacing",
         default=1.0, min=0.01, max=10.0,
@@ -166,7 +162,6 @@ class QuiltMakerPanel(bpy.types.Panel):
 
         layout.separator()
 
-        # Add the Preview Field here
         col = layout.column(align=True)
         col.label(text="Camera Preview Control:")
 
