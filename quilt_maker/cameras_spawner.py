@@ -26,26 +26,18 @@ def sync_camera_array(context):
     for i in range(count):
         offset_x = (i - center_cam) * spacing
 
-        # Create new camera
         new_cam_data = primary_cam.data.copy()
         new_cam_obj = bpy.data.objects.new(f"QuiltCam_{i:03d}", new_cam_data)
         context.collection.objects.link(new_cam_obj)
         new_cam_obj[QUILT_CAM_TAG] = True
 
-        # Setup Hierarchy
         new_cam_obj.parent = primary_cam
         new_cam_obj.location = (offset_x, 0, 0)
         new_cam_obj.rotation_euler = (0, 0, 0)
 
-        # Calculate Lens Shift
-        # Formula: shift = -offset / (sensor_width * (dist_to_plane / focal_length))
-        # But Blender's shift_x is relative to the longest side of the sensor.
-        # Simplified: shift_x = -offset / sensor_width_at_focal_plane
-
         sensor_width = primary_cam.data.sensor_width
         focal_length = primary_cam.data.lens
 
-        # This calculates how many 'sensor widths' the offset represents at the focus distance
         new_cam_obj.data.shift_x = (-offset_x * focal_length) / (sensor_width * dist)
 
 

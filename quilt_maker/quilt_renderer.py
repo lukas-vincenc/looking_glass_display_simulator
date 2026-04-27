@@ -15,7 +15,6 @@ class QuiltRenderer(bpy.types.Operator):
     _temp_dir = ""
     _target_dir = ""
 
-    # Store original settings to restore later
     _orig_res_x = 0
     _orig_res_y = 0
 
@@ -26,7 +25,6 @@ class QuiltRenderer(bpy.types.Operator):
             return {'CANCELLED'}
 
         if event.type == 'TIMER':
-            # Phase 1: Render Individual Tiles
             if self._current_index < len(self._cameras):
                 progress = (self._current_index / len(self._cameras)) * 100
                 context.workspace.status_text_set(
@@ -43,7 +41,6 @@ class QuiltRenderer(bpy.types.Operator):
                 self._current_index += 1
                 return {'RUNNING_MODAL'}
 
-            # Phase 2: Stitch Tiles into Quilt
             else:
                 context.workspace.status_text_set("Quilt Maker: Stitching Quilt Grid...")
                 self.process_quilt(context)
@@ -55,6 +52,7 @@ class QuiltRenderer(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         props = scene.qm_custom_props
+
         self._target_dir = bpy.path.abspath(props.qm_quilt_render_target_directory)
 
         if not self._target_dir or not os.path.exists(self._target_dir):
@@ -68,13 +66,11 @@ class QuiltRenderer(bpy.types.Operator):
             self.report({'ERROR'}, "No quilt cameras found. Spawn array first.")
             return {'CANCELLED'}
 
-        # Store and set resolution
         self._orig_res_x = scene.render.resolution_x
         self._orig_res_y = scene.render.resolution_y
         scene.render.resolution_x = props.qm_view_x_resolution
         scene.render.resolution_y = props.qm_view_y_resolution
 
-        # Setup Temp Dir
         self._temp_dir = os.path.join(self._target_dir, "quilt_temp")
         os.makedirs(self._temp_dir, exist_ok=True)
 
@@ -151,12 +147,10 @@ class QuiltRenderer(bpy.types.Operator):
         if self._timer:
             context.window_manager.event_timer_remove(self._timer)
 
-        # Restore resolutions
         context.scene.render.resolution_x = self._orig_res_x
         context.scene.render.resolution_y = self._orig_res_y
         context.workspace.status_text_set(None)
 
-        # Delete temp files
         for p in self._tile_paths:
             if os.path.exists(p):
                 try:

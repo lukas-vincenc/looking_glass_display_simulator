@@ -1,5 +1,6 @@
 import bpy
 
+
 class PrimaryCameraSelector(bpy.types.Operator):
     bl_idname = "qm.view_primary_camera"
     bl_label = "View Primary Camera"
