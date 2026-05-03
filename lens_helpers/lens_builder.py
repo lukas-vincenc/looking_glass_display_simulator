@@ -68,13 +68,15 @@ def get_obj_dimensions(obj):
     return size_x, size_y, size_z
 
 
-def set_lens_location_rotation_and_scale(lens, params, display_width):
+def set_lens_location_and_rotation(lens, params, display_width):
     if params.tilt < 0:
         rotation_compensation = display_width
         rotation_z = math.pi
+        tilt_scale_compensation = -1
     else:
         rotation_compensation = 0
         rotation_z = 0
+        tilt_scale_compensation = 1
 
     lens_width = get_real_width(params)
 
@@ -85,15 +87,15 @@ def set_lens_location_rotation_and_scale(lens, params, display_width):
     lens.rotation_euler.y = abs(params.tilt)
     lens.rotation_euler.z = rotation_z
 
+    lens.scale.y = tilt_scale_compensation
+
 
 def resize_lens_to_correct_size(lens, params, base_dimensions):
-    tilt_multiplier = -1 if params.tilt < 0 else 1
-
     base_x, base_y, base_z = base_dimensions
     lens_width = get_real_width(params)
 
     target_x = lens_width
-    target_y = params.radius * params.depth * tilt_multiplier
+    target_y = params.radius * params.depth
     target_z = params.height
 
     sx = target_x / base_x
@@ -156,7 +158,7 @@ def build_lens(params: LensParameters, material, display_width):
 
     base_dimensions = get_obj_dimensions(lens)
 
-    set_lens_location_rotation_and_scale(lens, params, display_width)
+    set_lens_location_and_rotation(lens, params, display_width)
 
     lens["_base_size"] = base_dimensions
     lens["_base_mesh"] = lens.data.copy()

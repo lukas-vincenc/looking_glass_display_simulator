@@ -134,7 +134,7 @@ class QuiltRenderer(bpy.types.Operator):
         quilt_img = bpy.data.images.new(out_name, width=quilt_w, height=quilt_h)
         quilt_img.pixels.foreach_set(quilt_data.flatten())
 
-        aspect_ratio = round(th / tw, 3)
+        aspect_ratio = round(tw / th, 3)
         final_filename = f"{props.qm_filename}_qs{cols}x{rows}a{aspect_ratio}.png"
         save_path = os.path.join(self._target_dir, final_filename)
         quilt_img.filepath_raw = save_path

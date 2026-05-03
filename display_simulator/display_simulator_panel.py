@@ -5,8 +5,8 @@ import re
 import bpy
 from bpy.props import IntProperty, FloatProperty, StringProperty
 
-from ..lens_helpers.lens_builder import set_lens_location_rotation_and_scale, resize_lens_to_correct_size
-from .image_plane_spawner import spawn_image_plane, transform_quilt_and_spawn, update_display_image_params
+from ..lens_helpers.lens_builder import set_lens_location_and_rotation, resize_lens_to_correct_size
+from .image_plane_spawner import transform_quilt_and_spawn, update_display_image_params
 from .lens_geometry_nodes import update_gn_pitch
 from ..lens_helpers.lens_math import calculate_lens_parameters
 from .display_spawner import DisplaySpawner
@@ -44,7 +44,7 @@ def recalc_lens_geometry(self, context):
     # Reset mesh
     obj.data = obj["_base_mesh"].copy()
 
-    set_lens_location_rotation_and_scale(obj, params, display_width)
+    set_lens_location_and_rotation(obj, params, display_width)
     resize_lens_to_correct_size(obj, params, obj["_base_size"])
 
 
@@ -100,8 +100,8 @@ def update_quilt_image(self, context):
     if params is not None:
         custom_props.lds_x_tiles = params["x"]
         custom_props.lds_y_tiles = params["y"]
-        custom_props.lds_width = 1
-        custom_props.lds_height = params["ratio"]
+        custom_props.lds_width = params["ratio"]
+        custom_props.lds_height = 1
 
         lens = bpy.data.objects.get("Lens")
         block = bpy.data.objects.get("RefractiveBlock")
@@ -122,6 +122,7 @@ def update_quilt_image(self, context):
         custom_props.lds_image_pitch,
         custom_props.lds_image_tilt,
         custom_props.lds_image_center,
+        custom_props.lds_subpixel,
         custom_props.lds_width,
         custom_props.lds_height,
         custom_props.lds_x_tiles,
@@ -140,15 +141,19 @@ def update_block(self, context):
 def update_display_image_param(self, context):
     custom_props = context.scene.lds_custom_props
 
-    update_display_image_params(
-        custom_props.lds_image_pitch,
-        custom_props.lds_image_tilt,
-        custom_props.lds_image_center,
-        custom_props.lds_width,
-        custom_props.lds_height,
-        custom_props.lds_x_tiles,
-        custom_props.lds_y_tiles
-    )
+    calibration = {
+        'pitch': custom_props.lds_image_pitch,
+        'tilt': custom_props.lds_image_tilt,
+        'center': custom_props.lds_image_center,
+        'subpixel': custom_props.lds_subpixel,
+        'x_tiles': custom_props.lds_x_tiles,
+        'y_tiles': custom_props.lds_y_tiles
+    }
+
+    width = custom_props.lds_width
+    height = custom_props.lds_height
+
+    update_display_image_params(calibration, width, height)
 
 
 def update_plane_height(height):
@@ -256,6 +261,11 @@ class CustomProps(bpy.types.PropertyGroup):
         max=1,
         update=update_display_image_param
     )
+    lds_subpixel: FloatProperty(
+        name="Subpixel",
+        default=0,
+        update=update_display_image_param
+    )
     # Display Settings
     lds_pitch: IntProperty(
         name="Pitch",
@@ -266,7 +276,7 @@ class CustomProps(bpy.types.PropertyGroup):
     )
     lds_tilt: FloatProperty(
         name="Tilt",
-        default=math.radians(10.85),
+        default=math.radians(11),
         min=-math.pi / 2,
         max=math.pi / 2,
         subtype='ANGLE',
@@ -335,6 +345,7 @@ class DisplaySimulatorPanel(bpy.types.Panel):
         layout.prop(cus_pt, "lds_image_pitch")
         layout.prop(cus_pt, "lds_image_tilt")
         layout.prop(cus_pt, "lds_image_center")
+        layout.prop(cus_pt, "lds_subpixel")
 
         layout.separator()
 

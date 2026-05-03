@@ -1,8 +1,7 @@
 import bpy
 import math
 
-from ..lens_helpers.lens_builder import set_origin_bottom_center
-from ..quilt_maker.display_image_interlacer_nodes import get_node_tree
+from ..quilt_maker.quilt_interlacer_nodes import get_node_tree
 
 
 def get_material(img):
@@ -68,12 +67,14 @@ def spawn_image_plane(img, context):
     plane.rotation_euler = (math.pi / 2, 0, 0)
 
 
-def transform_quilt_and_spawn(img, context, pitch, tilt, center, width, height, x_tiles, y_tiles):
+def transform_quilt_and_spawn(img, context, pitch, tilt, center, subpixel, width, height, x_tiles, y_tiles):
     calibration = {
         'pitch': pitch,
-        'tilt': tilt * (height / width),
+        'tilt': math.tan(tilt) * (height / width),
         'center': center,
-        'tiles': (x_tiles, y_tiles)
+        'subpixel': subpixel,
+        'x_tiles': x_tiles,
+        'y_tiles': y_tiles
     }
 
     bpy.ops.mesh.primitive_plane_add(
@@ -93,7 +94,7 @@ def transform_quilt_and_spawn(img, context, pitch, tilt, center, width, height, 
     return plane
 
 
-def update_display_image_params(pitch, tilt, center, width, height, x_tiles, y_tiles):
+def update_display_image_params(calibration, width, height):
     mat = bpy.data.materials.get("Display_Image_Interlacer")
     if not mat or not mat.node_tree:
         return
@@ -101,16 +102,14 @@ def update_display_image_params(pitch, tilt, center, width, height, x_tiles, y_t
     nodes = mat.node_tree.nodes
 
     if "Tilt" in nodes:
-        nodes["Tilt"].inputs[1].default_value = tilt * (height / width)
+        nodes["Tilt"].outputs[0].default_value = math.tan(calibration['tilt']) * (height / width)
     if "Pitch" in nodes:
-        nodes["Pitch"].inputs[1].default_value = pitch
+        nodes["Pitch"].outputs[0].default_value = calibration['pitch']
     if "Center" in nodes:
-        nodes["Center"].inputs[1].default_value = center
-    if "Total_Tiles" in nodes:
-        nodes["Total_Tiles"].inputs[1].default_value = x_tiles * y_tiles
-    if "X_Tiles.001" in nodes:
-        nodes["X_Tiles.001"].inputs[1].default_value = x_tiles
-    if "X_Tiles.002" in nodes:
-        nodes["X_Tiles.002"].inputs[1].default_value = x_tiles
-    if "Tiles_Vector" in nodes:
-        nodes["Tiles_Vector"].inputs[1].default_value = (x_tiles, y_tiles, 1.0)
+        nodes["Center"].outputs[0].default_value = calibration['center']
+    if "Subpixel" in nodes:
+        nodes["Subpixel"].outputs[0].default_value = calibration['subpixel']
+    if "X_Tiles" in nodes:
+        nodes["X_Tiles"].outputs[0].default_value = calibration['x_tiles']
+    if "Y_Tiles" in nodes:
+        nodes["Y_Tiles"].outputs[0].default_value = calibration['y_tiles']
