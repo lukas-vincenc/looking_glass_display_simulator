@@ -101,8 +101,6 @@ class QuiltRenderer(bpy.types.Operator):
         quilt_w = cols * tw
         quilt_h = rows * th
 
-        # Pre-allocate the giant quilt array (RGBA)
-        # We use uint8 for speed/memory if possible, or float32 for high bit depth
         quilt_data = np.zeros((quilt_h, quilt_w, 4), dtype=np.float32)
 
         for idx, path in enumerate(self._tile_paths):
@@ -110,13 +108,11 @@ class QuiltRenderer(bpy.types.Operator):
             # Calculate row from bottom-up (Blender image standard)
             row = idx // cols
 
-            # Load tile
             img = bpy.data.images.load(path)
             tile_pixels = np.zeros(tw * th * 4, dtype=np.float32)
             img.pixels.foreach_get(tile_pixels)
             tile_pixels = tile_pixels.reshape((th, tw, 4))
 
-            # Insert into quilt grid
             y_start = row * th
             y_end = y_start + th
             x_start = col * tw
