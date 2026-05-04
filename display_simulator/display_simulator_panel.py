@@ -5,8 +5,9 @@ import re
 import bpy
 from bpy.props import IntProperty, FloatProperty, StringProperty
 
+from .interlaced_image_exporter import InterlacedImageExporter
 from ..lens_helpers.lens_builder import set_lens_location_and_rotation, resize_lens_to_correct_size
-from .image_plane_spawner import transform_quilt_and_spawn, update_display_image_params
+from .image_plane_spawner import transform_quilt_and_spawn, update_display_image_params, spawn_image_plane
 from .lens_geometry_nodes import update_gn_pitch
 from ..lens_helpers.lens_math import calculate_lens_parameters
 from .display_spawner import DisplaySpawner
@@ -48,24 +49,29 @@ def recalc_lens_geometry(self, context):
     resize_lens_to_correct_size(obj, params, obj["_base_size"])
 
 
-# TODO: possible delete
-# def update_display_image(self, context):
-#     path = self.lds_image_path
-#     if not path:
-#         return
-#
-#     try:
-#         img = bpy.data.images.load(path, check_existing=True)
-#     except:
-#         print("Invalid image path")
-#         return
-#
-#     # Remove old plane if exists
-#     if "ImagePlane" in bpy.data.objects:
-#         old = bpy.data.objects["ImagePlane"]
-#         bpy.data.objects.remove(old, do_unlink=True)
-#
-#     spawn_image_plane(img, context)
+def update_interlaced_image(self, context):
+    path = self.lds_image_path
+    if not path:
+        return
+
+    try:
+        img = bpy.data.images.load(path, check_existing=True)
+    except:
+        print("Invalid image path")
+        return
+
+    if img.size[1] != 0:
+        aspect = img.size[0] / img.size[1]
+
+        self.lds_width = aspect
+        self.lds_height = 1
+
+    # Remove old plane if exists
+    if "ImagePlane" in bpy.data.objects:
+        old = bpy.data.objects["ImagePlane"]
+        bpy.data.objects.remove(old, do_unlink=True)
+
+    spawn_image_plane(img, context)
 
 
 def parse_quilt_settings(filepath):
@@ -187,14 +193,15 @@ def update_aspect_ratio(self, context):
 
 # Custom properties shown in the extension UI panel
 class CustomProps(bpy.types.PropertyGroup):
-    # lds_image_path: StringProperty(
-    #     name="Display Image",
-    #     description="Select a ready display image to spawn as plane",
-    #     subtype='FILE_PATH',
-    #     update=update_display_image
-    # )
-
-    # Quilt Setting
+    # Possible imports
+    lds_image_path: StringProperty(
+        name="Interlaced Image",
+        description="Select an image ready to be displayed\n\n"
+                    "This image is static and changing the image configuration\n"
+                    "inside the panel won't affect it",
+        subtype='FILE_PATH',
+        update=update_interlaced_image
+    )
     lds_quilt_path: StringProperty(
         name="Quilt",
         description="Select a quilt image to transform and spawn as plane\n\n"
@@ -205,6 +212,7 @@ class CustomProps(bpy.types.PropertyGroup):
         subtype='FILE_PATH',
         update=update_quilt_image
     )
+    # Quilt Setting
     lds_x_tiles: IntProperty(
         name="X tiles",
         default=8,
@@ -266,6 +274,23 @@ class CustomProps(bpy.types.PropertyGroup):
         default=0,
         update=update_display_image_param
     )
+    lds_output_dir: StringProperty(
+        name="Directory",
+        default="",
+        description="Define where to save the interlaced image",
+        subtype='DIR_PATH'
+    )
+    lds_output_filename: StringProperty(
+        name="Filename",
+        default="interlaced_image",
+        description="Define the name of the interlaced image file to be exported",
+    )
+    lds_x_resolution: IntProperty(
+        name="X Resolution",
+        default=2560,
+        min=1,
+        max=10000,
+    )
     # Display Settings
     lds_pitch: IntProperty(
         name="Pitch",
@@ -324,9 +349,9 @@ class DisplaySimulatorPanel(bpy.types.Panel):
         cus_pt = context.scene.lds_custom_props
 
         layout.label(text="Input Quilt", icon="OUTLINER_COLLECTION")
-
-        # layout.prop(cus_pt, "lds_image_path")
         layout.prop(cus_pt, "lds_quilt_path")
+        layout.label(text="or")
+        layout.prop(cus_pt, "lds_image_path")
 
         layout.prop(cus_pt, "lds_x_tiles")
         layout.prop(cus_pt, "lds_y_tiles")
@@ -340,12 +365,27 @@ class DisplaySimulatorPanel(bpy.types.Panel):
 
         layout.separator()
 
-        layout.label(text="Display Image Settings", icon="OUTLINER_COLLECTION")
+        layout.label(text="Interlaced Image Settings", icon="OUTLINER_COLLECTION")
 
         layout.prop(cus_pt, "lds_image_pitch")
         layout.prop(cus_pt, "lds_image_tilt")
         layout.prop(cus_pt, "lds_image_center")
         layout.prop(cus_pt, "lds_subpixel")
+
+        layout.separator()
+
+        layout.label(text="Interlaced Image Export", icon="OUTLINER_COLLECTION")
+
+        layout.prop(cus_pt, "lds_x_resolution")
+
+        y = math.floor(cus_pt.lds_x_resolution * cus_pt.lds_height / cus_pt.lds_width)
+
+        layout.label(text=f"Image Resolution: {cus_pt.lds_x_resolution} x {y}")
+
+        layout.prop(cus_pt, "lds_output_dir")
+        layout.prop(cus_pt, "lds_output_filename")
+
+        layout.operator("export.shader_result")
 
         layout.separator()
 
@@ -380,7 +420,8 @@ class DisplaySimulatorPanel(bpy.types.Panel):
 all_classes = [
     CustomProps,
     DisplaySimulatorPanel,
-    DisplaySpawner
+    DisplaySpawner,
+    InterlacedImageExporter
 ]
 
 

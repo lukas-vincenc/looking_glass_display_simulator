@@ -1,7 +1,7 @@
 import bpy
 import math
 
-from ..quilt_maker.quilt_interlacer_nodes import get_node_tree
+from .quilt_interlacer_nodes import get_node_tree
 
 
 def get_material(img):

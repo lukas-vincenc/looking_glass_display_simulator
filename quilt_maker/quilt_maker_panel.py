@@ -1,10 +1,7 @@
-import math
-
 import bpy
 from bpy.props import (StringProperty, IntProperty, FloatProperty, PointerProperty, BoolProperty)
 
 from .cameras_spawner import CamerasSpawner, sync_camera_array
-from .display_image_renderer import DisplayImageRenderer
 from .primary_camera_selector import PrimaryCameraSelector
 from .quilt_renderer import QuiltRenderer
 
@@ -53,27 +50,6 @@ class CustomProps(bpy.types.PropertyGroup):
         default="",
         description="Define the root path of the project",
         subtype='DIR_PATH'
-    )
-    qm_pitch: IntProperty(
-        name="Pitch",
-        default=355,
-        min=1,
-        max=1000
-    )
-    qm_tilt: FloatProperty(
-        name="Tilt",
-        default=0,
-        min=-math.pi / 2,
-        max=math.pi / 2,
-        subtype='ANGLE',
-        unit='ROTATION',
-        precision=5
-    )
-    qm_center: FloatProperty(
-        name="Center",
-        default=0,
-        min=-1,
-        max=1,
     )
     qm_x_views: IntProperty(
         name="X",
@@ -184,23 +160,12 @@ class QuiltMakerPanel(bpy.types.Panel):
 
         layout.operator("qm.render_quilt")
 
-        # layout.separator()
-        #
-        # layout.label(text="Render Display Image:", icon="OUTLINER_COLLECTION")
-        #
-        # layout.prop(cus_pt, "qm_pitch")
-        # layout.prop(cus_pt, "qm_tilt")
-        # layout.prop(cus_pt, "qm_center")
-        #
-        # layout.operator("qm.render_display_image")
-
 
 all_classes = [
     CustomProps,
     QuiltMakerPanel,
     CamerasSpawner,
     QuiltRenderer,
-    DisplayImageRenderer,
     PrimaryCameraSelector
 ]
 
