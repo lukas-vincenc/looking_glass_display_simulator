@@ -6,9 +6,9 @@ import math
 LENS_CYLINDER_VERTICES = 512
 
 
-def unite_objects(obj1, obj2):
+def do_operation(obj1, obj2, operation):
     bool_mod = obj1.modifiers.new(name="FlatSide", type='BOOLEAN')
-    bool_mod.operation = 'UNION'
+    bool_mod.operation = operation
     bool_mod.object = obj2
 
     bpy.context.view_layer.objects.active = obj1
@@ -121,7 +121,23 @@ def create_lens_cylinder(params):
     return lens
 
 
-def create_lens_cube(params):
+def create_lens_diff_cube(params):
+    bpy.ops.mesh.primitive_cube_add(
+        size=1,
+        location=(0, params.radius, 0)
+    )
+
+    cube = bpy.context.object
+    cube.name = "Flatten"
+
+    cube.scale.x = params.radius * 2
+    cube.scale.y = params.radius * 2
+    cube.scale.z = params.height
+
+    return cube
+
+
+def create_lens_union_cube(params):
     depth_multiplier = params.depth - 1
     flatten_offset = params.radius * (depth_multiplier / 2)
 
@@ -142,9 +158,12 @@ def create_lens_cube(params):
 
 def build_lens(params: LensParameters, material, display_width):
     lens = create_lens_cylinder(params)
-    cube = create_lens_cube(params)
+    cube = create_lens_diff_cube(params)
 
-    unite_objects(lens, cube)
+    do_operation(lens, cube, 'DIFFERENCE')
+
+    cube = create_lens_union_cube(params)
+    do_operation(lens, cube, 'UNION')
 
     flatten_lens_on_side(lens, -1, params.radius, params.height, params.depth, params.width_percentage)
     flatten_lens_on_side(lens, 1, params.radius, params.height, params.depth, params.width_percentage)

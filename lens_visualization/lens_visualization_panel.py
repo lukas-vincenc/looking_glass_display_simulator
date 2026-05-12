@@ -39,6 +39,7 @@ class CustomProps(bpy.types.PropertyGroup):
     lens_depth: FloatProperty(
         name="Lens Depth",
         default=3,
+        min=1,
         unit='NONE'
     )
     lens_width: FloatProperty(

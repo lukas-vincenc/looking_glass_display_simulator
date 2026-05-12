@@ -37,7 +37,7 @@ def get_node_tree(img, calibration):
     center_000 = shader_nodetree.nodes.new("ShaderNodeMath")
     center_000.name = "Center.000"
     center_000.hide = True
-    center_000.operation = 'SUBTRACT'
+    center_000.operation = 'ADD'
     center_000.use_clamp = False
 
     # Node Total_Tiles
@@ -137,7 +137,7 @@ def get_node_tree(img, calibration):
     center_001 = shader_nodetree.nodes.new("ShaderNodeMath")
     center_001.name = "Center.001"
     center_001.hide = True
-    center_001.operation = 'SUBTRACT'
+    center_001.operation = 'ADD'
     center_001.use_clamp = False
 
     # Node Total_Tiles.001
@@ -248,7 +248,7 @@ def get_node_tree(img, calibration):
     center_002 = shader_nodetree.nodes.new("ShaderNodeMath")
     center_002.name = "Center.002"
     center_002.hide = True
-    center_002.operation = 'SUBTRACT'
+    center_002.operation = 'ADD'
     center_002.use_clamp = False
 
     # Node Total_Tiles.002

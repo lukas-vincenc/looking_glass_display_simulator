@@ -144,6 +144,22 @@ def update_block(self, context):
     obj.scale.y = self.lds_block_depth
 
 
+def update_block_ior(self, context):
+    obj = bpy.data.objects.get("RefractiveBlock")
+    if obj is None:
+        return
+
+    mat = obj.data.materials.get("BlockMaterial")
+    if mat is None:
+        return
+
+    glass = mat.node_tree.nodes.get("Glass BSDF")
+    if glass is None:
+        return
+
+    glass.inputs['IOR'].default_value = self.lds_block_ior
+
+
 def update_display_image_param(self, context):
     custom_props = context.scene.lds_custom_props
 
@@ -322,10 +338,16 @@ class CustomProps(bpy.types.PropertyGroup):
         subtype='DISTANCE',
         update=update_block
     )
+    lds_block_ior: FloatProperty(
+        name="Block IOR",
+        default=2,
+        update=update_block_ior
+    )
     # Static Lens Config
     lds_depth: FloatProperty(
         name="Lens Depth",
         default=3,
+        min=1,
         unit='NONE'
     )
     lds_lens_width: FloatProperty(
@@ -378,7 +400,7 @@ class DisplaySimulatorPanel(bpy.types.Panel):
 
         layout.prop(cus_pt, "lds_x_resolution")
 
-        y = math.floor(cus_pt.lds_x_resolution * cus_pt.lds_height / cus_pt.lds_width)
+        y = round(cus_pt.lds_x_resolution * cus_pt.lds_height / cus_pt.lds_width)
 
         layout.label(text=f"Image Resolution: {cus_pt.lds_x_resolution} x {y}")
 
@@ -400,6 +422,7 @@ class DisplaySimulatorPanel(bpy.types.Panel):
         layout.prop(cus_pt, "lds_center")
 
         layout.prop(cus_pt, "lds_block_depth")
+        layout.prop(cus_pt, "lds_block_ior")
 
         layout.separator()
 

@@ -1,7 +1,7 @@
 import bpy
 
 
-def create_glass_material(mat_name):
+def create_glass_material(mat_name, ior):
     mat = bpy.data.materials.new(mat_name)
     mat.use_nodes = True
 
@@ -19,7 +19,7 @@ def create_glass_material(mat_name):
     glass.location = (0, 0)
 
     glass.inputs['Roughness'].default_value = 0.0
-    glass.inputs['IOR'].default_value = 1.49
+    glass.inputs['IOR'].default_value = ior
     glass.inputs['Color'].default_value = (1, 1, 1, 1)
 
     links.new(glass.outputs['BSDF'], output.inputs['Surface'])
@@ -33,13 +33,13 @@ def get_lens_material():
     if mat_name in bpy.data.materials:
         return bpy.data.materials[mat_name]
 
-    return create_glass_material(mat_name)
+    return create_glass_material(mat_name, 1.49)
 
 
-def get_block_material():
+def get_block_material(ior):
     mat_name = "BlockMaterial"
 
     if mat_name in bpy.data.materials:
         return bpy.data.materials[mat_name]
 
-    return create_glass_material(mat_name)
+    return create_glass_material(mat_name, ior)

@@ -84,10 +84,6 @@ class CustomProps(bpy.types.PropertyGroup):
         min=0,
         update=update_preview_camera
     )
-    qm_view_hints: BoolProperty(
-        name="View Hints",
-        default=False
-    )
     qm_filename: StringProperty(
         name="Filename",
         default="quilt",
@@ -105,8 +101,6 @@ class QuiltMakerPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         cus_pt = context.scene.qm_custom_props
-
-        layout.prop(cus_pt, "qm_view_hints")
 
         layout.label(text="Spawn Camera Array:", icon="OUTLINER_COLLECTION")
 
@@ -126,13 +120,14 @@ class QuiltMakerPanel(bpy.types.Panel):
         col.prop(cus_pt, "qm_focus_object")
         layout.prop(cus_pt, "qm_spacing")
 
-        if cus_pt.qm_view_hints:
-            row = layout.row()
-            row.enabled = False
-            col = row.column(align=True)
-            col.label(text="Manual reload necessary whenever")
-            col.label(text="primary camera positioning")
-            col.label(text="or scene layout changes")
+        # TODO: update descriptions of each property, add tooltips
+        # if cus_pt.qm_view_hints:
+        #     row = layout.row()
+        #     row.enabled = False
+        #     col = row.column(align=True)
+        #     col.label(text="Manual reload necessary whenever")
+        #     col.label(text="primary camera positioning")
+        #     col.label(text="or scene layout changes")
 
         layout.operator("qm.cameras_spawner")
 

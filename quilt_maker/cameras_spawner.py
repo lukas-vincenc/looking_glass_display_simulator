@@ -1,5 +1,6 @@
 import bpy
 
+# TODO: use this tag when it should be used
 QUILT_CAM_TAG = "is_quilt_cam"
 
 

@@ -38,7 +38,7 @@ class InterlacedImageExporter(bpy.types.Operator):
         bpy.context.scene.render.engine = 'CYCLES'
 
         x_res = props.lds_x_resolution
-        y_res = math.floor(x_res * props.lds_height / props.lds_width)
+        y_res = round(x_res * props.lds_height / props.lds_width)
 
         # Create image
         img = bpy.data.images.new("BakedImage", width=x_res, height=y_res)

@@ -12,18 +12,18 @@ def get_refractive_block(custom_props, display_width):
 
     bpy.ops.mesh.primitive_cube_add(
         size=1,
-        location=(0.5, -0.5, 0.5),
     )
 
     block = bpy.context.object
     block.name = "RefractiveBlock"
 
     set_origin_bottom_center(block)
+    block.location = (0, 0.00001, 0)
 
     block.scale.y = block_depth
     block.scale.z = block_height
 
-    material = get_block_material()
+    material = get_block_material(custom_props.lds_block_ior)
     block.data.materials.append(material)
 
     return block
