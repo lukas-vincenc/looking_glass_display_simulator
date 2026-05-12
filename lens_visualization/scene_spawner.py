@@ -74,9 +74,6 @@ def spawn_ray_source():
     nodes = ray.modifiers.new(name="GeometryNodes", type='NODES')
     nodes.node_group = refraction_geometry_nodes.get_node_tree()
 
-    for item in refraction_geometry_nodes.get_node_tree().interface.items_tree:
-        print(item.identifier, item.name, item.socket_type)
-
     nodes["Socket_2"] = ray_source
     nodes["Socket_3"] = get_or_create_collection("Raycast_Targets")
     nodes["Socket_4"] = 4.0

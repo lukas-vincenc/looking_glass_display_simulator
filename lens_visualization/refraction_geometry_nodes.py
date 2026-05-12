@@ -4,22 +4,25 @@ import typing
 
 def nodegroup_1_node_group():
     """Initialize NodeGroup node group"""
-    nodegroup_1 = bpy.data.node_groups.new(type='GeometryNodeTree', name="NodeGroup")
+    nodegroup_1 = bpy.data.node_groups.new(type='GeometryNodeTree', name="NodeGroup.003")
 
     nodegroup_1.color_tag = 'NONE'
     nodegroup_1.description = ""
     nodegroup_1.default_group_node_width = 140
+    nodegroup_1.show_modifier_manage_panel = True
 
     # nodegroup_1 interface
 
     # Socket Geometry
-    geometry_socket = nodegroup_1.interface.new_socket(name="Geometry", in_out='OUTPUT', socket_type='NodeSocketGeometry')
+    geometry_socket = nodegroup_1.interface.new_socket(name="Geometry", in_out='OUTPUT',
+                                                           socket_type='NodeSocketGeometry')
     geometry_socket.attribute_domain = 'POINT'
     geometry_socket.default_input = 'VALUE'
     geometry_socket.structure_type = 'AUTO'
 
     # Socket Hit Position
-    hit_position_socket = nodegroup_1.interface.new_socket(name="Hit Position", in_out='OUTPUT', socket_type='NodeSocketVector')
+    hit_position_socket = nodegroup_1.interface.new_socket(name="Hit Position", in_out='OUTPUT',
+                                                               socket_type='NodeSocketVector')
     hit_position_socket.default_value = (0.0, 0.0, 0.0)
     hit_position_socket.min_value = -3.4028234663852886e+38
     hit_position_socket.max_value = 3.4028234663852886e+38
@@ -29,7 +32,8 @@ def nodegroup_1_node_group():
     hit_position_socket.structure_type = 'AUTO'
 
     # Socket Hit Normal
-    hit_normal_socket = nodegroup_1.interface.new_socket(name="Hit Normal", in_out='OUTPUT', socket_type='NodeSocketVector')
+    hit_normal_socket = nodegroup_1.interface.new_socket(name="Hit Normal", in_out='OUTPUT',
+                                                             socket_type='NodeSocketVector')
     hit_normal_socket.default_value = (0.0, 0.0, 0.0)
     hit_normal_socket.min_value = -3.4028234663852886e+38
     hit_normal_socket.max_value = 3.4028234663852886e+38
@@ -49,7 +53,8 @@ def nodegroup_1_node_group():
     vector_socket.structure_type = 'AUTO'
 
     # Socket Incoming
-    incoming_socket = nodegroup_1.interface.new_socket(name="Incoming", in_out='INPUT', socket_type='NodeSocketVector')
+    incoming_socket = nodegroup_1.interface.new_socket(name="Incoming", in_out='INPUT',
+                                                           socket_type='NodeSocketVector')
     incoming_socket.default_value = (0.0, 0.0, 0.0)
     incoming_socket.min_value = -10000.0
     incoming_socket.max_value = 10000.0
@@ -69,13 +74,15 @@ def nodegroup_1_node_group():
     normal_socket.structure_type = 'AUTO'
 
     # Socket Target Geometry
-    target_geometry_socket = nodegroup_1.interface.new_socket(name="Target Geometry", in_out='INPUT', socket_type='NodeSocketGeometry')
+    target_geometry_socket = nodegroup_1.interface.new_socket(name="Target Geometry", in_out='INPUT',
+                                                                  socket_type='NodeSocketGeometry')
     target_geometry_socket.attribute_domain = 'POINT'
     target_geometry_socket.default_input = 'VALUE'
     target_geometry_socket.structure_type = 'AUTO'
 
     # Socket Position
-    position_socket = nodegroup_1.interface.new_socket(name="Position", in_out='INPUT', socket_type='NodeSocketVector')
+    position_socket = nodegroup_1.interface.new_socket(name="Position", in_out='INPUT',
+                                                           socket_type='NodeSocketVector')
     position_socket.default_value = (0.0, 0.0, 0.0)
     position_socket.min_value = -10000.0
     position_socket.max_value = 10000.0
@@ -85,7 +92,8 @@ def nodegroup_1_node_group():
     position_socket.structure_type = 'AUTO'
 
     # Socket Geometry
-    geometry_socket_1 = nodegroup_1.interface.new_socket(name="Geometry", in_out='INPUT', socket_type='NodeSocketGeometry')
+    geometry_socket_1 = nodegroup_1.interface.new_socket(name="Geometry", in_out='INPUT',
+                                                             socket_type='NodeSocketGeometry')
     geometry_socket_1.attribute_domain = 'POINT'
     geometry_socket_1.default_input = 'VALUE'
     geometry_socket_1.structure_type = 'AUTO'
@@ -125,11 +133,10 @@ def nodegroup_1_node_group():
     raycast_001 = nodegroup_1.nodes.new("GeometryNodeRaycast")
     raycast_001.name = "Raycast.001"
     raycast_001.data_type = 'FLOAT'
-    raycast_001.mapping = 'INTERPOLATED'
     # Attribute
     raycast_001.inputs[1].default_value = 0.0
     # Ray Length
-    raycast_001.inputs[4].default_value = 100.0
+    raycast_001.inputs[5].default_value = 100.0
 
     # Node Vector Math.009
     vector_math_009 = nodegroup_1.nodes.new("ShaderNodeVectorMath")
@@ -342,96 +349,95 @@ def nodegroup_1_node_group():
     nodegroup_1.nodes["Group Input.003"].location = (463.76776123046875, 133.82357788085938)
 
     # Set dimensions
-    nodegroup_1.nodes["Group Output"].width  = 140.0
+    nodegroup_1.nodes["Group Output"].width = 140.0
     nodegroup_1.nodes["Group Output"].height = 100.0
 
-    nodegroup_1.nodes["Group Input"].width  = 140.0
+    nodegroup_1.nodes["Group Input"].width = 140.0
     nodegroup_1.nodes["Group Input"].height = 100.0
 
-    nodegroup_1.nodes["Raycast.001"].width  = 150.0
+    nodegroup_1.nodes["Raycast.001"].width = 150.0
     nodegroup_1.nodes["Raycast.001"].height = 100.0
 
-    nodegroup_1.nodes["Vector Math.009"].width  = 140.0
+    nodegroup_1.nodes["Vector Math.009"].width = 140.0
     nodegroup_1.nodes["Vector Math.009"].height = 100.0
 
-    nodegroup_1.nodes["Set Position.001"].width  = 140.0
+    nodegroup_1.nodes["Set Position.001"].width = 140.0
     nodegroup_1.nodes["Set Position.001"].height = 100.0
 
-    nodegroup_1.nodes["Index.001"].width  = 140.0
+    nodegroup_1.nodes["Index.001"].width = 140.0
     nodegroup_1.nodes["Index.001"].height = 100.0
 
-    nodegroup_1.nodes["Math.001"].width  = 140.0
+    nodegroup_1.nodes["Math.001"].width = 140.0
     nodegroup_1.nodes["Math.001"].height = 100.0
 
-    nodegroup_1.nodes["Math.002"].width  = 140.0
+    nodegroup_1.nodes["Math.002"].width = 140.0
     nodegroup_1.nodes["Math.002"].height = 100.0
 
-    nodegroup_1.nodes["Vector Math"].width  = 140.0
+    nodegroup_1.nodes["Vector Math"].width = 140.0
     nodegroup_1.nodes["Vector Math"].height = 100.0
 
-    nodegroup_1.nodes["Math.003"].width  = 140.0
+    nodegroup_1.nodes["Math.003"].width = 140.0
     nodegroup_1.nodes["Math.003"].height = 100.0
 
-    nodegroup_1.nodes["Mix"].width  = 140.0
+    nodegroup_1.nodes["Mix"].width = 140.0
     nodegroup_1.nodes["Mix"].height = 100.0
 
-    nodegroup_1.nodes["Vector Math.001"].width  = 140.0
+    nodegroup_1.nodes["Vector Math.001"].width = 140.0
     nodegroup_1.nodes["Vector Math.001"].height = 100.0
 
-    nodegroup_1.nodes["Vector Math.002"].width  = 140.0
+    nodegroup_1.nodes["Vector Math.002"].width = 140.0
     nodegroup_1.nodes["Vector Math.002"].height = 100.0
 
-    nodegroup_1.nodes["Vector Math.003"].width  = 140.0
+    nodegroup_1.nodes["Vector Math.003"].width = 140.0
     nodegroup_1.nodes["Vector Math.003"].height = 100.0
 
-    nodegroup_1.nodes["Math.004"].width  = 140.0
+    nodegroup_1.nodes["Math.004"].width = 140.0
     nodegroup_1.nodes["Math.004"].height = 100.0
 
-    nodegroup_1.nodes["Math.005"].width  = 140.0
+    nodegroup_1.nodes["Math.005"].width = 140.0
     nodegroup_1.nodes["Math.005"].height = 100.0
 
-    nodegroup_1.nodes["Math.006"].width  = 140.0
+    nodegroup_1.nodes["Math.006"].width = 140.0
     nodegroup_1.nodes["Math.006"].height = 100.0
 
-    nodegroup_1.nodes["Math.007"].width  = 140.0
+    nodegroup_1.nodes["Math.007"].width = 140.0
     nodegroup_1.nodes["Math.007"].height = 100.0
 
-    nodegroup_1.nodes["Math.008"].width  = 140.0
+    nodegroup_1.nodes["Math.008"].width = 140.0
     nodegroup_1.nodes["Math.008"].height = 100.0
 
-    nodegroup_1.nodes["Group Input.001"].width  = 140.0
+    nodegroup_1.nodes["Group Input.001"].width = 140.0
     nodegroup_1.nodes["Group Input.001"].height = 100.0
 
-    nodegroup_1.nodes["Math.009"].width  = 140.0
+    nodegroup_1.nodes["Math.009"].width = 140.0
     nodegroup_1.nodes["Math.009"].height = 100.0
 
-    nodegroup_1.nodes["Math.010"].width  = 140.0
+    nodegroup_1.nodes["Math.010"].width = 140.0
     nodegroup_1.nodes["Math.010"].height = 100.0
 
-    nodegroup_1.nodes["Math.011"].width  = 140.0
+    nodegroup_1.nodes["Math.011"].width = 140.0
     nodegroup_1.nodes["Math.011"].height = 100.0
 
-    nodegroup_1.nodes["Vector Math.004"].width  = 140.0
+    nodegroup_1.nodes["Vector Math.004"].width = 140.0
     nodegroup_1.nodes["Vector Math.004"].height = 100.0
 
-    nodegroup_1.nodes["Group Input.002"].width  = 140.0
+    nodegroup_1.nodes["Group Input.002"].width = 140.0
     nodegroup_1.nodes["Group Input.002"].height = 100.0
 
-    nodegroup_1.nodes["Vector Math.005"].width  = 140.0
+    nodegroup_1.nodes["Vector Math.005"].width = 140.0
     nodegroup_1.nodes["Vector Math.005"].height = 100.0
 
-    nodegroup_1.nodes["Vector Math.006"].width  = 140.0
+    nodegroup_1.nodes["Vector Math.006"].width = 140.0
     nodegroup_1.nodes["Vector Math.006"].height = 100.0
 
-    nodegroup_1.nodes["Math.012"].width  = 140.0
+    nodegroup_1.nodes["Math.012"].width = 140.0
     nodegroup_1.nodes["Math.012"].height = 100.0
 
-    nodegroup_1.nodes["Switch"].width  = 140.0
+    nodegroup_1.nodes["Switch"].width = 140.0
     nodegroup_1.nodes["Switch"].height = 100.0
 
-    nodegroup_1.nodes["Group Input.003"].width  = 140.0
+    nodegroup_1.nodes["Group Input.003"].width = 140.0
     nodegroup_1.nodes["Group Input.003"].height = 100.0
-
 
     # Initialize nodegroup_1 links
 
@@ -470,7 +476,7 @@ def nodegroup_1_node_group():
         nodegroup_1.nodes["Group Input"].outputs[5],
         nodegroup_1.nodes["Math.002"].inputs[0]
     )
-    # vector_math_009.Vector -> raycast_001.Source Position
+    # vector_math_009.Vector -> raycast_001.Interpolation
     nodegroup_1.links.new(
         nodegroup_1.nodes["Vector Math.009"].outputs[0],
         nodegroup_1.nodes["Raycast.001"].inputs[2]
@@ -484,11 +490,6 @@ def nodegroup_1_node_group():
     nodegroup_1.links.new(
         nodegroup_1.nodes["Raycast.001"].outputs[2],
         nodegroup_1.nodes["Group Output"].inputs[2]
-    )
-    # vector_math.Vector -> raycast_001.Ray Direction
-    nodegroup_1.links.new(
-        nodegroup_1.nodes["Vector Math"].outputs[0],
-        nodegroup_1.nodes["Raycast.001"].inputs[3]
     )
     # vector_math.Vector -> group_output.Vector
     nodegroup_1.links.new(
@@ -655,47 +656,63 @@ def nodegroup_1_node_group():
         nodegroup_1.nodes["Group Input.003"].outputs[4],
         nodegroup_1.nodes["Switch"].inputs[1]
     )
+    # vector_math.Vector -> raycast_001.Ray Direction
+    nodegroup_1.links.new(
+        nodegroup_1.nodes["Vector Math"].outputs[0],
+        nodegroup_1.nodes["Raycast.001"].inputs[4]
+    )
+    # vector_math_009.Vector -> raycast_001.Source Position
+    nodegroup_1.links.new(
+        nodegroup_1.nodes["Vector Math.009"].outputs[0],
+        nodegroup_1.nodes["Raycast.001"].inputs[3]
+    )
 
     return nodegroup_1
 
 
 def geometry_nodes_1_node_group(node_tree_names: dict[typing.Callable, str]):
-    """Initialize Geometry Nodes node group"""
-    geometry_nodes_1 = bpy.data.node_groups.new(type='GeometryNodeTree', name="Geometry Nodes")
+    """Initialize Geometry Nodes.001 node group"""
+    geometry_nodes_1 = bpy.data.node_groups.new(type='GeometryNodeTree', name="Geometry Nodes.001")
 
     geometry_nodes_1.color_tag = 'NONE'
     geometry_nodes_1.description = ""
     geometry_nodes_1.default_group_node_width = 140
     geometry_nodes_1.is_modifier = True
+    geometry_nodes_1.show_modifier_manage_panel = True
 
     # geometry_nodes_1 interface
 
     # Socket Geometry
-    geometry_socket = geometry_nodes_1.interface.new_socket(name="Geometry", in_out='OUTPUT', socket_type='NodeSocketGeometry')
+    geometry_socket = geometry_nodes_1.interface.new_socket(name="Geometry", in_out='OUTPUT',
+                                                                socket_type='NodeSocketGeometry')
     geometry_socket.attribute_domain = 'POINT'
     geometry_socket.default_input = 'VALUE'
     geometry_socket.structure_type = 'AUTO'
 
     # Socket Geometry
-    geometry_socket_1 = geometry_nodes_1.interface.new_socket(name="Geometry", in_out='INPUT', socket_type='NodeSocketGeometry')
+    geometry_socket_1 = geometry_nodes_1.interface.new_socket(name="Geometry", in_out='INPUT',
+                                                                  socket_type='NodeSocketGeometry')
     geometry_socket_1.attribute_domain = 'POINT'
     geometry_socket_1.default_input = 'VALUE'
     geometry_socket_1.structure_type = 'AUTO'
 
     # Socket Object
-    object_socket = geometry_nodes_1.interface.new_socket(name="Object", in_out='INPUT', socket_type='NodeSocketObject')
+    object_socket = geometry_nodes_1.interface.new_socket(name="Object", in_out='INPUT',
+                                                              socket_type='NodeSocketObject')
     object_socket.attribute_domain = 'POINT'
     object_socket.default_input = 'VALUE'
     object_socket.structure_type = 'AUTO'
 
     # Socket Collection
-    collection_socket = geometry_nodes_1.interface.new_socket(name="Collection", in_out='INPUT', socket_type='NodeSocketCollection')
+    collection_socket = geometry_nodes_1.interface.new_socket(name="Collection", in_out='INPUT',
+                                                                  socket_type='NodeSocketCollection')
     collection_socket.attribute_domain = 'POINT'
     collection_socket.default_input = 'VALUE'
     collection_socket.structure_type = 'AUTO'
 
     # Socket Radius
-    radius_socket = geometry_nodes_1.interface.new_socket(name="Radius", in_out='INPUT', socket_type='NodeSocketFloat')
+    radius_socket = geometry_nodes_1.interface.new_socket(name="Radius", in_out='INPUT',
+                                                              socket_type='NodeSocketFloat')
     radius_socket.default_value = 0.05000000074505806
     radius_socket.min_value = 0.0
     radius_socket.max_value = 3.4028234663852886e+38
@@ -746,11 +763,12 @@ def geometry_nodes_1_node_group(node_tree_names: dict[typing.Callable, str]):
     raycast = geometry_nodes_1.nodes.new("GeometryNodeRaycast")
     raycast.name = "Raycast"
     raycast.data_type = 'FLOAT'
-    raycast.mapping = 'INTERPOLATED'
     # Attribute
     raycast.inputs[1].default_value = 0.0
+    # Interpolation
+    raycast.inputs[2].default_value = 'Interpolated'
     # Ray Length
-    raycast.inputs[4].default_value = 100.0
+    raycast.inputs[5].default_value = 100.0
 
     # Node Vector Rotate
     vector_rotate = geometry_nodes_1.nodes.new("ShaderNodeVectorRotate")
@@ -769,6 +787,7 @@ def geometry_nodes_1_node_group(node_tree_names: dict[typing.Callable, str]):
     realize_instances = geometry_nodes_1.nodes.new("GeometryNodeRealizeInstances")
     realize_instances.name = "Realize Instances"
     realize_instances.hide = True
+    realize_instances.realize_to_point_domain = False
     # Selection
     realize_instances.inputs[1].default_value = True
     # Realize All
@@ -885,8 +904,6 @@ def geometry_nodes_1_node_group(node_tree_names: dict[typing.Callable, str]):
     # Iterations
     repeat_input.inputs[0].default_value = 2
 
-
-
     # Set locations
     geometry_nodes_1.nodes["Group Input"].location = (-1189.33837890625, -213.7196044921875)
     geometry_nodes_1.nodes["Group Output"].location = (2259.921875, -48.11536407470703)
@@ -913,75 +930,74 @@ def geometry_nodes_1_node_group(node_tree_names: dict[typing.Callable, str]):
     geometry_nodes_1.nodes["Math.003"].location = (934.309326171875, 162.8408966064453)
 
     # Set dimensions
-    geometry_nodes_1.nodes["Group Input"].width  = 140.0
+    geometry_nodes_1.nodes["Group Input"].width = 140.0
     geometry_nodes_1.nodes["Group Input"].height = 100.0
 
-    geometry_nodes_1.nodes["Group Output"].width  = 140.0
+    geometry_nodes_1.nodes["Group Output"].width = 140.0
     geometry_nodes_1.nodes["Group Output"].height = 100.0
 
-    geometry_nodes_1.nodes["Mesh Line"].width  = 140.0
+    geometry_nodes_1.nodes["Mesh Line"].width = 140.0
     geometry_nodes_1.nodes["Mesh Line"].height = 100.0
 
-    geometry_nodes_1.nodes["Object Info"].width  = 140.0
+    geometry_nodes_1.nodes["Object Info"].width = 140.0
     geometry_nodes_1.nodes["Object Info"].height = 100.0
 
-    geometry_nodes_1.nodes["Collection Info"].width  = 140.0
+    geometry_nodes_1.nodes["Collection Info"].width = 140.0
     geometry_nodes_1.nodes["Collection Info"].height = 100.0
 
-    geometry_nodes_1.nodes["Raycast"].width  = 150.0
+    geometry_nodes_1.nodes["Raycast"].width = 150.0
     geometry_nodes_1.nodes["Raycast"].height = 100.0
 
-    geometry_nodes_1.nodes["Vector Rotate"].width  = 140.0
+    geometry_nodes_1.nodes["Vector Rotate"].width = 140.0
     geometry_nodes_1.nodes["Vector Rotate"].height = 100.0
 
-    geometry_nodes_1.nodes["Vector"].width  = 140.0
+    geometry_nodes_1.nodes["Vector"].width = 140.0
     geometry_nodes_1.nodes["Vector"].height = 100.0
 
-    geometry_nodes_1.nodes["Realize Instances"].width  = 140.0
+    geometry_nodes_1.nodes["Realize Instances"].width = 140.0
     geometry_nodes_1.nodes["Realize Instances"].height = 100.0
 
-    geometry_nodes_1.nodes["Set Position"].width  = 140.0
+    geometry_nodes_1.nodes["Set Position"].width = 140.0
     geometry_nodes_1.nodes["Set Position"].height = 100.0
 
-    geometry_nodes_1.nodes["Math"].width  = 140.0
+    geometry_nodes_1.nodes["Math"].width = 140.0
     geometry_nodes_1.nodes["Math"].height = 100.0
 
-    geometry_nodes_1.nodes["Index"].width  = 140.0
+    geometry_nodes_1.nodes["Index"].width = 140.0
     geometry_nodes_1.nodes["Index"].height = 100.0
 
-    geometry_nodes_1.nodes["Mesh to Curve"].width  = 140.0
+    geometry_nodes_1.nodes["Mesh to Curve"].width = 140.0
     geometry_nodes_1.nodes["Mesh to Curve"].height = 100.0
 
-    geometry_nodes_1.nodes["Curve to Mesh"].width  = 140.0
+    geometry_nodes_1.nodes["Curve to Mesh"].width = 140.0
     geometry_nodes_1.nodes["Curve to Mesh"].height = 100.0
 
-    geometry_nodes_1.nodes["Curve Circle"].width  = 140.0
+    geometry_nodes_1.nodes["Curve Circle"].width = 140.0
     geometry_nodes_1.nodes["Curve Circle"].height = 100.0
 
-    geometry_nodes_1.nodes["Group Input.001"].width  = 140.0
+    geometry_nodes_1.nodes["Group Input.001"].width = 140.0
     geometry_nodes_1.nodes["Group Input.001"].height = 100.0
 
-    geometry_nodes_1.nodes["Math.001"].width  = 140.0
+    geometry_nodes_1.nodes["Math.001"].width = 140.0
     geometry_nodes_1.nodes["Math.001"].height = 100.0
 
-    geometry_nodes_1.nodes["Repeat Input"].width  = 140.0
+    geometry_nodes_1.nodes["Repeat Input"].width = 140.0
     geometry_nodes_1.nodes["Repeat Input"].height = 100.0
 
-    geometry_nodes_1.nodes["Repeat Output"].width  = 140.0
+    geometry_nodes_1.nodes["Repeat Output"].width = 140.0
     geometry_nodes_1.nodes["Repeat Output"].height = 100.0
 
-    geometry_nodes_1.nodes["Group.002"].width  = 140.0
+    geometry_nodes_1.nodes["Group.002"].width = 140.0
     geometry_nodes_1.nodes["Group.002"].height = 100.0
 
-    geometry_nodes_1.nodes["Math.002"].width  = 140.0
+    geometry_nodes_1.nodes["Math.002"].width = 140.0
     geometry_nodes_1.nodes["Math.002"].height = 100.0
 
-    geometry_nodes_1.nodes["Mix"].width  = 140.0
+    geometry_nodes_1.nodes["Mix"].width = 140.0
     geometry_nodes_1.nodes["Mix"].height = 100.0
 
-    geometry_nodes_1.nodes["Math.003"].width  = 140.0
+    geometry_nodes_1.nodes["Math.003"].width = 140.0
     geometry_nodes_1.nodes["Math.003"].height = 100.0
-
 
     # Initialize geometry_nodes_1 links
 
@@ -1010,11 +1026,6 @@ def geometry_nodes_1_node_group(node_tree_names: dict[typing.Callable, str]):
         geometry_nodes_1.nodes["Vector"].outputs[0],
         geometry_nodes_1.nodes["Vector Rotate"].inputs[0]
     )
-    # vector_rotate.Vector -> raycast.Ray Direction
-    geometry_nodes_1.links.new(
-        geometry_nodes_1.nodes["Vector Rotate"].outputs[0],
-        geometry_nodes_1.nodes["Raycast"].inputs[3]
-    )
     # collection_info.Instances -> realize_instances.Geometry
     geometry_nodes_1.links.new(
         geometry_nodes_1.nodes["Collection Info"].outputs[0],
@@ -1034,11 +1045,6 @@ def geometry_nodes_1_node_group(node_tree_names: dict[typing.Callable, str]):
     geometry_nodes_1.links.new(
         geometry_nodes_1.nodes["Raycast"].outputs[1],
         geometry_nodes_1.nodes["Set Position"].inputs[2]
-    )
-    # object_info.Location -> raycast.Source Position
-    geometry_nodes_1.links.new(
-        geometry_nodes_1.nodes["Object Info"].outputs[1],
-        geometry_nodes_1.nodes["Raycast"].inputs[2]
     )
     # index.Index -> math.Value
     geometry_nodes_1.links.new(
@@ -1169,6 +1175,16 @@ def geometry_nodes_1_node_group(node_tree_names: dict[typing.Callable, str]):
     geometry_nodes_1.links.new(
         geometry_nodes_1.nodes["Repeat Output"].outputs[0],
         geometry_nodes_1.nodes["Mesh to Curve"].inputs[0]
+    )
+    # object_info.Location -> raycast.Source Position
+    geometry_nodes_1.links.new(
+        geometry_nodes_1.nodes["Object Info"].outputs[1],
+        geometry_nodes_1.nodes["Raycast"].inputs[3]
+    )
+    # vector_rotate.Vector -> raycast.Ray Direction
+    geometry_nodes_1.links.new(
+        geometry_nodes_1.nodes["Vector Rotate"].outputs[0],
+        geometry_nodes_1.nodes["Raycast"].inputs[4]
     )
 
     return geometry_nodes_1
