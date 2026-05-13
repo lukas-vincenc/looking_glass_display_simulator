@@ -7,7 +7,11 @@ import numpy as np
 class QuiltRenderer(bpy.types.Operator):
     bl_idname = "qm.render_quilt"
     bl_label = "Render Quilt"
-    bl_description = "Render a quilt"
+    bl_description = ("Render a quilt\n"
+                      "CAUTION: Blender freezes while working on the quilt\n"
+                      "A progress bar will appear in the bottom left part of the screen.\n"
+                      "Execution may be stopped by pressing Esc.\n"
+                      "Have a little patience please, this issue has not yet been solved.")
 
     _timer = None
     _cameras = []

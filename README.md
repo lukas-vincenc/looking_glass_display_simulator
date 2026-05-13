@@ -4,7 +4,7 @@ A Blender Extension allowing the user to simulate and experiment
 with holographic display technology like Looking Glass Displays for 
 example.
 
-# Installation
+# Manual Installation
 
 1. Download this repository as a ZIP file
 2. Open Blender
@@ -21,7 +21,7 @@ is checked next to the add-on name in the add-ons list.
 
 # Usage
 
-The extension introduces two tabs - `QuiltMaker` and `LentDisplay`.
+The extension introduces two main tabs - `QuiltMaker` and `LKGDisplaySim`.
 
 The workflow should be as follows:
 
@@ -33,52 +33,32 @@ Use QuiltMaker to spawn cameras and
 calibrate to your liking
                 |
                 V
-Render Display Image (set pitch, tilt...)
+Render a quilt
                 |
                 V
 Open new scene and the LentDisplay tab
                 |
                 V
-Select the Display Image using the file picker
-                |
-                V
-Calibrate aspect ratio and lens params to match the image
+Select the quilt using the file picker
                 |
                 V
 Spawn Display and observe holographic effect
 in the Rendered Viewport
+            |       ^
+            V       |
+Play around with different lens, display
+and image settings
 ```
+
+Additionally, a third tab called `LensVisualization` is added. It may be used to 
+simulate a cylindrical lens and observe how it refracts light.
 
 
 # Known issues
 
-### Blender freezes when rendering the quilt or the display image.
+### Blender freezes when rendering the quilt.
 
 After pressing the Render button Blender seems to freeze,
-but it's working silently in the background. Once it's done, 
-it unfreezes. So far I don't have a solution for this one, 
-but I have some things to experiment with.
-
-### Tilt is a little imprecise.
-
-Tested out a display image render out with the tilt of 11 degrees.
-The display with lens tilted exactly 11 degrees displays the image,
-however it's a little imprecise. In this case, 11.05 degrees turned
-out to be more precise.
-
-At this point I don't have a solution for this, and I'm not sure 
-that I'll have one. My suspicion is that that's caused by some 
-rounding errors in the background.
-
-### The display simulator breaks a little with negative tilt.
-
-The calculation of that is not yet perfect. 
-However, it's still a little usable.
-
-# TODO
-
-- Speed up the display image rendering (currently a 4K image took around 7 minutes to render on my PC)
-- Correct shape of the display
-- Lenses don't cover the entire screen
-- Extracting pitch, tilt... from the image itself?
-- Create utils for calculating lens dimensions and so on
+but it's working in the background. A progress bar appears
+in the bottom left corner to indicate it's working. 
+Once it's done, it unfreezes. So far, no solution has been found.
