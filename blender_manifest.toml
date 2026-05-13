@@ -1,0 +1,14 @@
+schema_version = "1.0.0"
+
+id = "looking_glass_display_simulator"
+version = "1.0.0"
+name = "Looking Glass Display Simulator"
+tagline = "Simulate a Looking Glass display in Blender. Extension also provides tools to simplify creating quilts in Blender."
+maintainer = "Lukáš Vincenc"
+type = "add-on"
+website = "https://github.com/lukas-vincenc/looking_glass_display_simulator"
+blender_version_min = "5.0.0"
+license = [
+  "SPDX:GPL-3.0-or-later",
+]
+files = "Import/export image files from/to disk"
