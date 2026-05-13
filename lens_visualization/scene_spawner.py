@@ -106,6 +106,8 @@ def clear_scene():
             bpy.data.objects.remove(obj, do_unlink=True)
 
 
+# Called from the lens visualization panel - upon pressing the "Load Scene" button
+# Spawns the entire scene
 class SceneSpawner(bpy.types.Operator):
     bl_idname = "object.scene_spawner"
     bl_label = "Scene Spawner"

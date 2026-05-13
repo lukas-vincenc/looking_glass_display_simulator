@@ -13,6 +13,7 @@ class LensParameters:
     missing_lenses: int
 
 
+# Calculates the correct lens dimensions based on the user config
 def calculate_lens_parameters(
         display_width,
         pitch,

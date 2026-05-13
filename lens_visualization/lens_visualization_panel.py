@@ -22,6 +22,7 @@ def update_ray_source_rotation(self, context):
     obj.rotation_euler.z = self.ray_source_rotation
 
 
+# Custom properties shown in the extension UI panel
 class CustomProps(bpy.types.PropertyGroup):
     ray_source_x: FloatProperty(
         name="Ray Source X",
@@ -58,6 +59,7 @@ class LensVisualizationPanel(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = 'LensVisualization'
 
+    # Builds the panel out of inputs and buttons
     def draw(self, context):
         layout = self.layout
         cus_pt = context.scene.lvis_custom_props

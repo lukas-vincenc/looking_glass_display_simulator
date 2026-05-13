@@ -2,6 +2,10 @@ import bpy
 import typing
 
 
+# A Geometry Nodes setup which creates a ray and calculates how it refracts
+
+# Node setup transformed to Python using the "Node To Python" Blender extension created by Brendar Parmer
+# Available at: https://extensions.blender.org/add-ons/node-to-python/
 def nodegroup_1_node_group():
     """Initialize NodeGroup node group"""
     nodegroup_1 = bpy.data.node_groups.new(type='GeometryNodeTree', name="NodeGroup.003")

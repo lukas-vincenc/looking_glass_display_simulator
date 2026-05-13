@@ -1,6 +1,6 @@
 import bpy
 
-from .lens_geometry_nodes import get_node_tree, update_gn_pitch
+from .lens_geometry_nodes import get_pitch_node_tree, update_gn_pitch
 from ..lens_helpers.materials import get_lens_material, get_block_material
 from ..lens_helpers.lens_builder import build_lens, set_origin_bottom_center
 from ..lens_helpers.lens_math import calculate_lens_parameters
@@ -36,6 +36,10 @@ def clear_scene():
             bpy.data.objects.remove(obj, do_unlink=True)
 
 
+# Called from the display simulator panel - upon pressing the "Load Display" button
+# 1. Sets rendering engine to Cycles
+# 2. Spawns a correctly sized lenticular lens
+# 3. Spawns a refractive block
 class DisplaySpawner(bpy.types.Operator):
     bl_idname = "object.display_spawner"
     bl_label = "Display Spawner"
@@ -68,7 +72,7 @@ class DisplaySpawner(bpy.types.Operator):
         material = get_lens_material()
         lens = build_lens(params, material, self.DISPLAY_WIDTH)
 
-        gn_tree = get_node_tree()
+        gn_tree = get_pitch_node_tree()
         gn_mod = lens.modifiers.new(name="LDS_GeometryNodes", type='NODES')
         gn_mod.node_group = gn_tree
         update_gn_pitch(gn_mod, custom_props.lds_pitch, params.missing_lenses)

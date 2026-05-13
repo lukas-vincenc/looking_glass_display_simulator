@@ -6,10 +6,12 @@ from .primary_camera_selector import PrimaryCameraSelector
 from .quilt_renderer import QuiltRenderer
 
 
+# Called, whenever a setting influencing the synchronization of the camera array is changed
 def update_cameras(self, context):
     sync_camera_array(context)
 
 
+# Called when an index of the preview camera changes. Sets the viewport to POV of a quilt camera at selected index
 def update_preview_camera(self, context):
     max_index = (self.qm_x_views * self.qm_y_views) - 1
 
@@ -67,13 +69,13 @@ class CustomProps(bpy.types.PropertyGroup):
     )
     qm_view_x_resolution: IntProperty(
         name="X",
-        default=960,
+        default=480,
         min=1,
         max=10000
     )
     qm_view_y_resolution: IntProperty(
         name="Y",
-        default=720,
+        default=360,
         min=1,
         max=10000
     )
@@ -98,18 +100,12 @@ class QuiltMakerPanel(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = 'QuiltMaker'
 
+    # Builds the panel out of inputs and buttons
     def draw(self, context):
         layout = self.layout
         cus_pt = context.scene.qm_custom_props
 
         layout.label(text="Spawn Camera Array:", icon="OUTLINER_COLLECTION")
-
-        layout.label(text="Views Grid Dimensions:")
-        layout.prop(cus_pt, "qm_x_views")
-        layout.prop(cus_pt, "qm_y_views")
-
-        cam_count = cus_pt.qm_x_views * cus_pt.qm_y_views
-        layout.label(text=f"Camera Count: {cam_count}")
 
         col = layout.column(align=True)
         col.label(text="Primary Camera:")
@@ -118,6 +114,14 @@ class QuiltMakerPanel(bpy.types.Panel):
         col = layout.column(align=True)
         col.label(text="Focus Object:")
         col.prop(cus_pt, "qm_focus_object")
+
+        layout.label(text="Views Grid Dimensions:")
+        layout.prop(cus_pt, "qm_x_views")
+        layout.prop(cus_pt, "qm_y_views")
+
+        cam_count = cus_pt.qm_x_views * cus_pt.qm_y_views
+        layout.label(text=f"Camera Count: {cam_count}")
+
         layout.prop(cus_pt, "qm_spacing")
 
         # TODO: update descriptions of each property, add tooltips

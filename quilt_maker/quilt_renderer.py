@@ -3,6 +3,7 @@ import os
 import numpy as np
 
 
+# Called when the "Render Quilt" button is pressed
 class QuiltRenderer(bpy.types.Operator):
     bl_idname = "qm.render_quilt"
     bl_label = "Render Quilt"
@@ -18,6 +19,10 @@ class QuiltRenderer(bpy.types.Operator):
     _orig_res_x = 0
     _orig_res_y = 0
 
+    # Handles the main rendering loop. If Esc key is pressed, stops the execution
+    # Otherwise
+    # 1. Renders a tile
+    # 2. Updates the UI
     def modal(self, context, event):
         if event.type == 'ESC':
             self.cleanup(context)
@@ -49,6 +54,7 @@ class QuiltRenderer(bpy.types.Operator):
 
         return {'PASS_THROUGH'}
 
+    # Is executed first, gathers all parameters and launches the main rendering loop - modal
     def execute(self, context):
         scene = context.scene
         props = scene.qm_custom_props
@@ -84,6 +90,7 @@ class QuiltRenderer(bpy.types.Operator):
 
         return {'RUNNING_MODAL'}
 
+    # Takes in a camera, and renders the scene from its POV
     def render_single_tile(self, scene, cam, idx):
         scene.camera = cam
         out_path = os.path.join(self._temp_dir, f"tile_{idx:03d}.png")
@@ -91,6 +98,11 @@ class QuiltRenderer(bpy.types.Operator):
         bpy.ops.render.render(write_still=True)
         self._tile_paths.append(out_path)
 
+    # Builds the quilt out of all the rendered tiles
+    # 1. Collect all render parameters
+    # 2. Insert each tile into its proper index
+    # 3. Put the properly placed tiles into an image
+    # 4. Save the final quilt
     def process_quilt(self, context):
         props = context.scene.qm_custom_props
         cols = props.qm_x_views
@@ -105,7 +117,6 @@ class QuiltRenderer(bpy.types.Operator):
 
         for idx, path in enumerate(self._tile_paths):
             col = idx % cols
-            # Calculate row from bottom-up (Blender image standard)
             row = idx // cols
 
             img = bpy.data.images.load(path)
@@ -122,7 +133,6 @@ class QuiltRenderer(bpy.types.Operator):
 
             bpy.data.images.remove(img)
 
-        # Create and Save Result
         out_name = "Quilt_Result"
         if out_name in bpy.data.images:
             bpy.data.images.remove(bpy.data.images[out_name])
@@ -139,6 +149,7 @@ class QuiltRenderer(bpy.types.Operator):
 
         self.report({'INFO'}, f"Quilt saved to: {save_path}")
 
+    # Stops the timer, deletes temporary files
     def cleanup(self, context):
         if self._timer:
             context.window_manager.event_timer_remove(self._timer)

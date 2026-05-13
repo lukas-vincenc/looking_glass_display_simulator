@@ -1,7 +1,12 @@
 import bpy
 
 
-def get_node_tree():
+# A Geometry Nodes setup which handles the lenticular lens pitch
+# Duplicates the lens to match the pitch
+
+# Node setup transformed to Python using the "Node To Python" Blender extension created by Brendar Parmer
+# Available at: https://extensions.blender.org/add-ons/node-to-python/
+def get_pitch_node_tree():
     """Initialize Geometry Nodes.004 node group"""
     geometry_nodes_004_1 = bpy.data.node_groups.new(type='GeometryNodeTree', name="Geometry Nodes.004")
 

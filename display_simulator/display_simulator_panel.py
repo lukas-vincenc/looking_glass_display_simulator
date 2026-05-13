@@ -13,6 +13,7 @@ from ..lens_helpers.lens_math import calculate_lens_parameters
 from .display_spawner import DisplaySpawner
 
 
+# Used to update the Geometry Nodes handling the pitch
 def update_geometry_nodes(obj, params, pitch):
     gn_mod = obj.modifiers.get("LDS_GeometryNodes")
     if not gn_mod or not gn_mod.node_group:
@@ -21,6 +22,7 @@ def update_geometry_nodes(obj, params, pitch):
     update_gn_pitch(gn_mod, pitch, params.missing_lenses)
 
 
+# Called whenever lens dynamic configuration changes. Updates the lens array.
 def recalc_lens_geometry(self, context):
     obj = bpy.data.objects.get("Lens")
     if obj is None or "_base_mesh" not in obj or "_base_size" not in obj:
@@ -49,6 +51,7 @@ def recalc_lens_geometry(self, context):
     resize_lens_to_correct_size(obj, params, obj["_base_size"])
 
 
+# Called when an interlaced image is selected - spawns the image as a plane
 def update_interlaced_image(self, context):
     path = self.lds_image_path
     if not path:
@@ -74,6 +77,7 @@ def update_interlaced_image(self, context):
     spawn_image_plane(img, context)
 
 
+# Parses the quilt filename, and if it follows Looking Glass's naming convention, extracts the parameters
 def parse_quilt_settings(filepath):
     filename = os.path.basename(filepath)
     pattern = r"qs(\d+)x(\d+)a(\d*\.?\d+)"
@@ -88,6 +92,8 @@ def parse_quilt_settings(filepath):
     return None
 
 
+# Called when a new quilt image is selected
+# If a proper filename convention is followed, the quilt is transformed automatically and a display is spawned
 def update_quilt_image(self, context):
     path = self.lds_quilt_path
     if not path:
@@ -136,6 +142,7 @@ def update_quilt_image(self, context):
     )
 
 
+# Called when block depth changes
 def update_block(self, context):
     obj = bpy.data.objects.get("RefractiveBlock")
     if obj is None:
@@ -144,6 +151,7 @@ def update_block(self, context):
     obj.scale.y = self.lds_block_depth
 
 
+# Called when block IOR changes
 def update_block_ior(self, context):
     obj = bpy.data.objects.get("RefractiveBlock")
     if obj is None:
@@ -160,6 +168,8 @@ def update_block_ior(self, context):
     glass.inputs['IOR'].default_value = self.lds_block_ior
 
 
+# Called whenever the parameters of the interlaced image change
+# Propagates the new configuration to the Shader Nodes setup
 def update_display_image_param(self, context):
     custom_props = context.scene.lds_custom_props
 
@@ -178,6 +188,7 @@ def update_display_image_param(self, context):
     update_display_image_params(calibration, width, height)
 
 
+# Called when aspect ratio changes - updates the aspect ratio of the image
 def update_plane_height(height):
     plane = bpy.data.objects.get("ImagePlane")
     if plane is None:
@@ -187,6 +198,7 @@ def update_plane_height(height):
     plane.location.z = height / 2
 
 
+# Called when aspect ratio changes - updates the aspect ratio of the refractive block
 def update_block_height(height):
     block = bpy.data.objects.get("RefractiveBlock")
     if block is None:
@@ -195,6 +207,7 @@ def update_block_height(height):
     block.scale.z = height
 
 
+# Called whenever user changes the aspect ratio
 def update_aspect_ratio(self, context):
     custom_props = context.scene.lds_custom_props
 
@@ -360,23 +373,25 @@ class CustomProps(bpy.types.PropertyGroup):
 
 
 class DisplaySimulatorPanel(bpy.types.Panel):
-    bl_label = "Lenticular Display Simulator"
-    bl_idname = "LENTICULAR_DISPLAY_SIMULATOR_PT_lds"
+    bl_label = "Looking Glass Display Simulator"
+    bl_idname = "LOOKING_GLASS_DISPLAY_SIMULATOR_PT_lds"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = 'LentDisplay'
+    bl_category = 'LKGDisplaySim'
 
+    # Builds the panel out of inputs and buttons
     def draw(self, context):
         layout = self.layout
         cus_pt = context.scene.lds_custom_props
 
-        layout.label(text="Input Quilt", icon="OUTLINER_COLLECTION")
+        layout.label(text="Input Image", icon="OUTLINER_COLLECTION")
         layout.prop(cus_pt, "lds_quilt_path")
-        layout.label(text="or")
-        layout.prop(cus_pt, "lds_image_path")
 
         layout.prop(cus_pt, "lds_x_tiles")
         layout.prop(cus_pt, "lds_y_tiles")
+
+        layout.label(text="or")
+        layout.prop(cus_pt, "lds_image_path")
 
         layout.separator()
 
@@ -415,7 +430,7 @@ class DisplaySimulatorPanel(bpy.types.Panel):
         col.label(text="Dynamic lens configuration", icon="OUTLINER_COLLECTION")
         row = col.row()
         row.enabled = False
-        row.label(text="(changes in real-time)")
+        row.label(text="(changes optical elements in real-time)")
 
         layout.prop(cus_pt, "lds_pitch")
         layout.prop(cus_pt, "lds_tilt")

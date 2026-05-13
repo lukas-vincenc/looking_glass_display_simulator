@@ -1,12 +1,14 @@
-import math
 import bpy
 import os
 
-
+# Called from the display simulator panel - upon pressing the "Export Interlaced Image" button
+# 1. Creates an empty image
+# 2. Bakes the interlaced image into it
+# 3. Saves the baked image into selected directory
 class InterlacedImageExporter(bpy.types.Operator):
     bl_idname = "export.shader_result"
     bl_label = "Export Interlaced Image"
-    bl_description = "Export the quilt transformed into the display-ready image"
+    bl_description = "Export the quilt transformed into the display-ready interlaced image"
 
     def execute(self, context):
         scene = context.scene
@@ -23,7 +25,6 @@ class InterlacedImageExporter(bpy.types.Operator):
             self.report({'ERROR'}, "Invalid Filename")
             return {'CANCELLED'}
 
-        # Get material
         mat = bpy.data.materials.get("Display_Image_Interlacer")
         if not mat or not mat.node_tree:
             self.report({'ERROR'}, "Material not found or has no nodes")
@@ -40,32 +41,26 @@ class InterlacedImageExporter(bpy.types.Operator):
         x_res = props.lds_x_resolution
         y_res = round(x_res * props.lds_height / props.lds_width)
 
-        # Create image
         img = bpy.data.images.new("BakedImage", width=x_res, height=y_res)
 
-        # Add image texture node
         nodes = mat.node_tree.nodes
         img_node = nodes.new("ShaderNodeTexImage")
         img_node.image = img
         nodes.active = img_node
 
-        # Make sure object is selected & active
         bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.object.select_all(action='DESELECT')
         obj.select_set(True)
         bpy.context.view_layer.objects.active = obj
 
-        # Bake emission
         bpy.ops.object.bake(type='EMIT')
 
-        # Save image
         target_dir = bpy.path.abspath(props.lds_output_dir)
         save_path = os.path.join(target_dir, f"{props.lds_output_filename}.png")
         img.filepath_raw = save_path
         img.file_format = 'PNG'
         img.save()
 
-        # Cleanup
         nodes.remove(img_node)
 
         self.report({'INFO'}, "Image exported successfully")

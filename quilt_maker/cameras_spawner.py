@@ -1,9 +1,12 @@
 import bpy
 
-# TODO: use this tag when it should be used
 QUILT_CAM_TAG = "is_quilt_cam"
 
 
+# Called either when the "Reload Cameras Focus" button is pressed
+# or when the panel registers a change which unsyncs the camera array
+# 1. Deletes old cameras
+# 2. Spawns new cameras and sets their focus (using shift_x)
 def sync_camera_array(context):
     props = context.scene.qm_custom_props
     primary_cam = props.qm_focus_camera
@@ -45,6 +48,8 @@ def sync_camera_array(context):
 class CamerasSpawner(bpy.types.Operator):
     bl_idname = "qm.cameras_spawner"
     bl_label = "Reload Cameras Focus"
+    bl_description = ("Manual reload necessary whenever primary camera\n"
+                      "positioning or scene layout changes")
 
     def execute(self, context):
         sync_camera_array(context)

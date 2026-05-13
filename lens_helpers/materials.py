@@ -1,6 +1,7 @@
 import bpy
 
 
+# Creates a generic glass material, IOR is selected by the caller
 def create_glass_material(mat_name, ior):
     mat = bpy.data.materials.new(mat_name)
     mat.use_nodes = True
@@ -8,7 +9,6 @@ def create_glass_material(mat_name, ior):
     nodes = mat.node_tree.nodes
     links = mat.node_tree.links
 
-    # remove default nodes
     for node in nodes:
         nodes.remove(node)
 
@@ -27,6 +27,7 @@ def create_glass_material(mat_name, ior):
     return mat
 
 
+# Material used for the lenticular lens
 def get_lens_material():
     mat_name = "LensMaterial"
 
@@ -36,6 +37,7 @@ def get_lens_material():
     return create_glass_material(mat_name, 1.49)
 
 
+# Material used for the refractive block
 def get_block_material(ior):
     mat_name = "BlockMaterial"
 

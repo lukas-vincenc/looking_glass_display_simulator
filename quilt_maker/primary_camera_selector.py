@@ -1,10 +1,12 @@
 import bpy
 
 
+# Called when "View Primary Camera" is pressed
+# Switches the main viewport to primary camera's POV
 class PrimaryCameraSelector(bpy.types.Operator):
     bl_idname = "qm.view_primary_camera"
     bl_label = "View Primary Camera"
-    bl_description = "Switch view to the Primary (Master) Camera"
+    bl_description = "Switch view to the Primary Camera's POV"
 
     def execute(self, context):
         props = context.scene.qm_custom_props

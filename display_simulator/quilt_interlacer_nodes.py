@@ -1,7 +1,14 @@
 import bpy
 
 
-def get_node_tree(img, calibration):
+# A Shader Nodes setup which transforms an input quilt into the interlaced image
+
+# Node setup transformed to Python using the "Node To Python" Blender extension created by Brendar Parmer
+# Available at: https://extensions.blender.org/add-ons/node-to-python/
+
+# The interlacing equation replicates the one created by Looking Glass:
+# https://github.com/Looking-Glass/LookingGlassCoreSDK/blob/master/HoloPlayCore/include/HoloPlayShaders.h
+def get_shader_node_tree(img, calibration):
     mat_name = "Display_Image_Interlacer"
     lkg_mat = bpy.data.materials.get(mat_name)
 

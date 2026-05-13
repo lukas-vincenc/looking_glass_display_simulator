@@ -6,6 +6,9 @@ import math
 LENS_CYLINDER_VERTICES = 512
 
 
+# Carries out a CSG operation, used for
+# 1. operation = 'DIFFERENCE'
+# 2. operation = 'UNION'
 def do_operation(obj1, obj2, operation):
     bool_mod = obj1.modifiers.new(name="FlatSide", type='BOOLEAN')
     bool_mod.operation = operation
@@ -17,6 +20,7 @@ def do_operation(obj1, obj2, operation):
     bpy.data.objects.remove(obj2, do_unlink=True)
 
 
+# Creates a cube and substracts it from a lens side
 def flatten_lens_on_side(lens, side, lens_radius, lens_height, lens_depth, lens_width_percentage):
     flatten_offset = lens_radius * 0.5
 
@@ -68,6 +72,8 @@ def get_obj_dimensions(obj):
     return size_x, size_y, size_z
 
 
+# This method handles the position and rotation of the lens
+# Additionally, if the tilt is negative, it rotates the lenticular lens
 def set_lens_location_and_rotation(lens, params, display_width):
     if params.tilt < 0:
         rotation_compensation = display_width
@@ -90,6 +96,7 @@ def set_lens_location_and_rotation(lens, params, display_width):
     lens.scale.y = tilt_scale_compensation
 
 
+# Changes the scale of the lens based on user config
 def resize_lens_to_correct_size(lens, params, base_dimensions):
     base_x, base_y, base_z = base_dimensions
     lens_width = get_real_width(params)
@@ -108,6 +115,7 @@ def resize_lens_to_correct_size(lens, params, base_dimensions):
         v.co.z *= sz
 
 
+# Creates the base cylinder
 def create_lens_cylinder(params):
     bpy.ops.mesh.primitive_cylinder_add(
         vertices=LENS_CYLINDER_VERTICES,
@@ -121,6 +129,7 @@ def create_lens_cylinder(params):
     return lens
 
 
+# Creates a cube, that is subtracted from the cylinder to create a half cylinder
 def create_lens_diff_cube(params):
     bpy.ops.mesh.primitive_cube_add(
         size=1,
@@ -137,6 +146,7 @@ def create_lens_diff_cube(params):
     return cube
 
 
+# Creates a cube, that is combined with the half cylinder
 def create_lens_union_cube(params):
     depth_multiplier = params.depth - 1
     flatten_offset = params.radius * (depth_multiplier / 2)
@@ -156,6 +166,12 @@ def create_lens_union_cube(params):
     return cube
 
 
+# 1. Creates a cylinder
+# 2. Resizes it to a half cyliner
+# 3. Appending a cube to it to create a base lens
+# 4. Subtracting its sides to match the correct width percentage
+# 5. Sets the origin of the lens to its bottom center
+# 6. Sets correct position, rotation and scale of the lens.
 def build_lens(params: LensParameters, material, display_width):
     lens = create_lens_cylinder(params)
     cube = create_lens_diff_cube(params)
