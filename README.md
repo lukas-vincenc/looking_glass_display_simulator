@@ -4,6 +4,19 @@ A Blender Extension allowing the user to simulate and experiment
 with holographic display technology like Looking Glass Displays for 
 example.
 
+# Install from Blender Extension Store
+
+1. Open Blender
+2. `Edit` > `Preferences`
+3. Select `Get Extensions` in the left sidebar
+4. Search for `"Looking Glass Display Simulator"`
+5. Press `"Install"`
+
+The extension should now be ready-to-use. New tabs should appear
+in the right-hand side of the main window. If nothing happened, 
+make sure the checkbox is checked next to the add-on name in 
+the add-ons list.
+
 # Manual Installation
 
 1. Download this repository as a ZIP file
@@ -16,8 +29,9 @@ example.
 8. Done
 
 The extension should now be ready-to-use. New tabs should appear
-in the main window. If nothing happened, make sure the checkbox
-is checked next to the add-on name in the add-ons list.
+in the right-hand side of the main window. If nothing happened, 
+make sure the checkbox is checked next to the add-on name in 
+the add-ons list.
 
 # Usage
 
@@ -50,7 +64,7 @@ Play around with different lens, display
 and image settings
 ```
 
-Additionally, a third tab called `LensVisualization` is added. It may be used to 
+Additionally, a third tab called `LensVisualization` is provided. It may be used to 
 simulate a cylindrical lens and observe how it refracts light.
 
 
